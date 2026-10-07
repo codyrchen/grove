@@ -6,10 +6,10 @@ Run locally:
 
 import os
 
-from flask import Flask, abort, g, jsonify, render_template
+from flask import Flask, abort, g, jsonify, render_template, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import db, widgets
+from . import db, schedule, widgets
 from .config import database_url, load_env
 
 SITE_NAME = "Grove"
@@ -59,6 +59,14 @@ def create_app(database: str | None = None) -> Flask:
         if name not in ("greeting", "photo") and name not in widgets.WIDGETS:
             abort(404)
         return jsonify(widgets.build(get_db(), name))
+
+    @app.get("/api/classes")
+    def api_classes():
+        """A student's classes by CRN. The CRNs stay in their browser; nothing is stored here."""
+        crns = schedule.clean_crns(request.args.get("crns", ""))
+        resp = jsonify(schedule.my_classes(get_db(), crns))
+        resp.headers["Cache-Control"] = "private, no-store"
+        return resp
 
     @app.get("/healthz")
     def healthz():

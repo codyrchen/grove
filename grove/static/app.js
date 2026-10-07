@@ -5,7 +5,10 @@
   var WIDGETS = {};                             // id -> title
   window.GROVE_WIDGETS.forEach(function (w) { WIDGETS[w[0]] = w[1]; });
   var ICONS = { weather: "cloud-sun", news: "newspaper", links: "link-45deg", gameday: "trophy",
-                countdowns: "hourglass-split", square: "shop", tonight: "stars", dining: "cup-hot" };
+                countdowns: "hourglass-split", square: "shop", tonight: "stars", dining: "cup-hot",
+                classes: "journal-bookmark" };
+  var CRN_KEY = "grove.crns";
+  var classesEnabled = false;                   // the server has a term's classes to look up
   var foodOnly = false;                         // "Free food" filter on the Tonight card
   var ROLES = window.GROVE_ROLES;               // role -> widgets it starts with
   var ROLE_KEY = "grove.role";
@@ -145,6 +148,43 @@
         gameDate(week).toLocaleDateString([], { weekday: "long" });
     }
     pill.classList.toggle("d-none", !(today || week));
+  }
+
+  // ---------- my classes (CRNs saved per browser) ----------
+
+  function getCrns() {
+    try { return (localStorage.getItem(CRN_KEY) || "").trim(); } catch (e) { return ""; }
+  }
+
+  function loadClasses() {
+    var crns = getCrns();
+    var role = getRole();
+    if (!crns || role !== "student" || !classesEnabled) {
+      latest.classes = { data: { set_up: true, crns: "" }, empty: !classesEnabled };
+      drawClassPill();
+      return Promise.resolve();
+    }
+    return fetch("/api/classes?crns=" + encodeURIComponent(crns), { headers: { Accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (data) {
+        data.crns = crns;
+        latest.classes = { data: data, empty: !data.set_up };
+        drawClassPill();
+      })
+      .catch(function () { /* keep what we have */ });
+  }
+
+  // "Next: CSCI 211 at 1:00 PM · Weir Hall 106" under the greeting, for today's classes.
+  function drawClassPill() {
+    var pill = document.getElementById("class-pill");
+    var d = latest.classes && latest.classes.data;
+    var n = d && d.next;
+    var show = n && n.day === "Today" && getRole() === "student";
+    if (show) {
+      pill.textContent = (n.in_progress ? "In class: " : "Next: ") + n.label + " at " + n.time +
+        (n.where ? " · " + n.where : "");
+    }
+    pill.classList.toggle("d-none", !show);
   }
 
   // ---------- personal countdowns (saved per browser) ----------
@@ -372,6 +412,55 @@
                                   : "Counting down to your next trip back to Oxford?"));
       }
       body.appendChild(countdownForm());
+    },
+
+    classes: function (d, body) {
+      if (!d.set_up) {
+        body.appendChild(el("div", "widget-note", "My Classes isn't turned on for this term yet."));
+        return;
+      }
+      if (!d.crns) {
+        body.appendChild(el("div", "widget-note mb-2", "Add your CRNs to see your next class and where it is."));
+        var open = el("button", "countdown-add-btn", "+ Add my classes");
+        open.type = "button";
+        open.addEventListener("click", function () {
+          bootstrap.Modal.getOrCreateInstance(document.getElementById("settings")).show();
+          setTimeout(function () { document.getElementById("crn-input").focus(); }, 400);
+        });
+        body.appendChild(open);
+        return;
+      }
+      if (d.next) {
+        var big = el("div", "class-next");
+        big.appendChild(el("div", "game-label", d.next.in_progress ? "In class now" : "Next class"));
+        big.appendChild(el("div", "class-next-label", d.next.label));
+        big.appendChild(el("div", "class-next-when",
+          (d.next.in_progress ? "Started " : (d.next.day === "Today" ? "" : d.next.day + " ")) + d.next.time +
+          (d.next.where ? " · " + d.next.where : "")));
+        if (!d.next.in_progress && d.next.day === "Today") {
+          var mins = Math.round((new Date(d.next.start).getTime() - Date.now()) / 60000);
+          if (mins > 0) big.appendChild(el("div", "game-extra",
+            mins < 60 ? "Starts in " + mins + " min" : "Starts in " + Math.floor(mins / 60) + "h " + (mins % 60) + "m"));
+        }
+        body.appendChild(big);
+      } else {
+        body.appendChild(el("div", "widget-note", "No more classes this week."));
+      }
+      var rest = d.today.filter(function (o) { return !d.next || o.start !== d.next.start; });
+      if (rest.length) {
+        var ul = el("ul", "game-list");
+        rest.forEach(function (o) {
+          var li = el("li");
+          li.appendChild(el("span", "game-list-when", o.time));
+          li.appendChild(el("span", null, o.label + (o.where ? " · " + o.where : "")));
+          ul.appendChild(li);
+        });
+        body.appendChild(ul);
+      }
+      if (d.missing && d.missing.length) {
+        body.appendChild(el("div", "widget-note mt-2", "Couldn't find CRN " + d.missing.join(", ") +
+          " this term. Check it in Settings."));
+      }
     },
 
     dining: function (d, body) {
@@ -734,9 +823,15 @@
     fetch("/api/widgets", { headers: { Accept: "application/json" } })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (data) {
+        var classesData = latest.classes;
+        classesEnabled = !(data.classes && data.classes.empty);
         latest = data;
+        latest.classes = classesData || { data: { set_up: true, crns: "" }, empty: true };
         drawGreeting();
         drawGameday();
+        return loadClasses();
+      })
+      .then(function () {
         if (!arranging) draw();
       })
       .catch(function () { /* keep showing what we have */ });
@@ -838,6 +933,13 @@
     });
   });
 
+  document.getElementById("crn-input").addEventListener("change", function (e) {
+    var crns = e.target.value.split(/[\s,]+/).filter(function (c) { return /^\d{1,6}$/.test(c); }).slice(0, 12);
+    e.target.value = crns.join(", ");
+    try { localStorage.setItem(CRN_KEY, crns.join(",")); } catch (err) { /* ignore */ }
+    loadClasses().then(draw);
+  });
+
   document.getElementById("role-select").addEventListener("change", function (e) {
     setRole(e.target.value);
     syncSettings();
@@ -854,6 +956,7 @@
     syncSettings();
     nameInput.value = getName();
     searchToggle.checked = searchShown();
+    document.getElementById("crn-input").value = getCrns();
     document.getElementById("role-select").value = getRole();
   });
 

@@ -48,6 +48,16 @@ EVENTS_CALENDARS=campus=https://.../events.ics oxford=https://.../calendar.ics
 ```
 The same event appearing in two feeds is shown once. The card stays hidden until at least one feed has events.
 
+## My Classes
+
+Students type their CRNs in **Settings → Your classes**. The **My Classes** card then shows their next class with a countdown and room ("CSCI 211 · 1:00 PM · Weir Hall 106"), the rest of today's classes, and a "Next:" line under the greeting. CRNs are saved only in the student's browser. `/api/classes` looks them up without storing anything.
+
+Once a day the refresher reads every subject for the term from Ole Miss's public Banner class search, the same source RebelSnatch uses, and stores each section's days, times and room. Turn it on in Railway:
+```
+GROVE_TERM=202710        # Fall 2026; codes are YYYYTT: 10 Fall, 30 Spring, 50 Summer
+```
+The first run takes a few minutes, because requests are spaced a second apart to be polite to Banner. Change `GROVE_TERM` when a new semester starts. The card stays hidden until a term is set.
+
 ## Content you edit (grove/data)
 
 Some cards are driven by small JSON files in `grove/data/`. Edit them on GitHub and Railway redeploys. A missing or broken file just counts as empty, so a typo can't take the site down. Cards with nothing in them stay hidden.

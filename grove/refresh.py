@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 
 from . import db
 from .config import database_url, load_env
-from .pipelines import events, gameday, news, weather
+from .pipelines import classes, events, gameday, news, weather
 
 # name -> (fetch function, seconds between refreshes)
 PIPELINES = {
@@ -19,13 +19,14 @@ PIPELINES = {
     "news": (news.fetch, 60 * 60),
     "gameday": (gameday.fetch, 3 * 60 * 60),
     "events": (events.fetch, 60 * 60),
+    "classes": (classes.fetch, 24 * 60 * 60),
 }
 
 
 def run(conn: db.DB, name: str) -> bool:
     fetch, _ = PIPELINES[name]
     try:
-        data = fetch()
+        data = fetch(conn) if getattr(fetch, "needs_db", False) else fetch()
     except Exception as e:
         db.save_error(conn, name, f"{type(e).__name__}: {e}")
         print(f"! {name} failed: {e}  (keeping the last good data)")

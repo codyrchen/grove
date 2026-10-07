@@ -380,3 +380,9 @@ a { color: inherit; }
 .dining-status { color: var(--muted); font-size: .85rem; }
 .dining-status.soon { color: #ffd166; }
 .dining-list a { font-size: .8rem; font-weight: 700; color: var(--sky); text-decoration: none; }
+
+/* my classes */
+.class-next { padding-bottom: .25rem; }
+.class-next-label { font-size: 1.6rem; font-weight: 800; line-height: 1.15; margin: .3rem 0 .15rem; }
+.class-next-when { font-weight: 600; }
+.class-pill { margin-right: .35rem; background: rgba(143, 200, 242, .25); }

@@ -28,7 +28,7 @@ def test_healthz_and_about(client):
 def test_widgets_before_any_data(client):
     data = client.get("/api/widgets").get_json()
     assert set(data) == {"greeting", "photo", "weather", "news", "links", "gameday", "countdowns",
-                         "square", "tonight", "dining"}
+                         "square", "tonight", "dining", "classes"}
     assert data["weather"]["data"] is None and "first time" in data["weather"]["message"]
     assert data["links"]["data"]["links"][0]["label"] == "myOleMiss"
 

@@ -15,6 +15,7 @@ def database(request, tmp_path):
         pytest.skip("set TEST_DATABASE_URL to also test against Postgres")
     conn = db.connect(url)
     conn.execute("DELETE FROM widget_data")
+    conn.execute("DELETE FROM class_sections")
     conn.close()
     return url
 

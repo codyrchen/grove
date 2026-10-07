@@ -8,15 +8,22 @@ import json
 import sqlite3
 from datetime import datetime, timezone
 
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS widget_data (
-    name        TEXT PRIMARY KEY,
-    data        TEXT,
-    fetched_at  TEXT,
-    error       TEXT,
-    error_at    TEXT
-)
-"""
+SCHEMA = [
+    """CREATE TABLE IF NOT EXISTS widget_data (
+        name        TEXT PRIMARY KEY,
+        data        TEXT,
+        fetched_at  TEXT,
+        error       TEXT,
+        error_at    TEXT
+    )""",
+    # Class sections for "My Classes", replaced once a day from Banner.
+    """CREATE TABLE IF NOT EXISTS class_sections (
+        term        TEXT NOT NULL,
+        crn         TEXT NOT NULL,
+        data        TEXT NOT NULL,
+        PRIMARY KEY (term, crn)
+    )""",
+]
 
 
 def now_iso() -> str:
@@ -34,7 +41,8 @@ class DB:
         else:
             self.conn = sqlite3.connect(url, timeout=30)
             self.conn.execute("PRAGMA journal_mode=WAL")
-        self.execute(SCHEMA)
+        for statement in SCHEMA:
+            self.execute(statement)
 
     def execute(self, sql: str, params: tuple = ()):
         if not self.postgres:
@@ -46,6 +54,29 @@ class DB:
 
     def close(self):
         self.conn.close()
+
+
+def replace_sections(db: DB, term: str, sections: list[dict]) -> None:
+    """Swap in a term's sections in one transaction, so lookups never see a half-written term."""
+    rows = [(term, s["crn"], json.dumps(s)) for s in sections]
+    if db.postgres:
+        with db.conn.transaction():
+            db.conn.execute("DELETE FROM class_sections WHERE term = %s", (term,))
+            with db.conn.cursor() as cur:
+                cur.executemany("INSERT INTO class_sections (term, crn, data) VALUES (%s, %s, %s)", rows)
+    else:
+        with db.conn:  # one transaction; commits at the end
+            db.conn.execute("DELETE FROM class_sections WHERE term = ?", (term,))
+            db.conn.executemany("INSERT INTO class_sections (term, crn, data) VALUES (?, ?, ?)", rows)
+
+
+def get_sections(db: DB, term: str, crns: list[str]) -> list[dict]:
+    if not crns:
+        return []
+    marks = ", ".join(["%s"] * len(crns))
+    rows = db.execute(f"SELECT data FROM class_sections WHERE term = %s AND crn IN ({marks})",
+                      (term, *crns)).fetchall()
+    return [json.loads(r[0]) for r in rows]
 
 
 def connect(url: str) -> DB:

@@ -31,6 +31,7 @@
       <input type="search" name="q" id="search-input" placeholder="Search the web, or try “om parking”"
              aria-label="Search the web" autocomplete="off" spellcheck="false">
     </form>
+    <div class="hero-pill class-pill d-none" id="class-pill"></div>
     <div class="hero-pill gameday-pill d-none" id="gameday-pill"></div>
     <div class="hero-pill moment-pill d-none" id="moment-pill"></div>
     <div class="hero-pill {% if not greeting.semester_week %}d-none{% endif %}" id="greeting-week">
@@ -91,6 +92,9 @@
           <option value="alumni">Alum</option>
         </select>
         <div class="small text-muted mb-4">Changing this resets your widgets to that set.</div>
+        <label class="h6 fw-semibold d-block" for="crn-input">Your classes (CRNs)</label>
+        <input class="form-control mb-1" id="crn-input" inputmode="numeric" placeholder="e.g. 10343, 10500, 11872">
+        <div class="small text-muted mb-4">Find CRNs in your schedule on myOleMiss. They're saved only in this browser.</div>
         <div class="form-check form-switch mb-4">
           <input class="form-check-input" type="checkbox" role="switch" id="search-toggle">
           <label class="form-check-label" for="search-toggle">Show the search bar</label>

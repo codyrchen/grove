@@ -314,6 +314,9 @@ def build(conn: db.DB, name: str) -> dict:
         return tonight(conn)
     if name == "dining":
         return dining()
+    if name == "classes":
+        # Filled in by the browser from /api/classes; hidden until a term is set.
+        return {"data": None, "personal": True, "empty": not os.environ.get("GROVE_TERM")}
     if name == "links":
         return {"data": {"links": QUICK_LINKS}}
     return stored(conn, name)
@@ -322,6 +325,7 @@ def build(conn: db.DB, name: str) -> dict:
 # id -> title, in the default order. Columns are filled left to right.
 WIDGETS = {
     "gameday": "Game Day",
+    "classes": "My Classes",
     "weather": "Weather",
     "dining": "Dining Open Now",
     "tonight": "Tonight in Oxford",
@@ -333,7 +337,7 @@ WIDGETS = {
 
 # Widgets each kind of visitor starts with (they can turn any on or off later).
 ROLES = {
-    "student": ["gameday", "weather", "dining", "tonight", "countdowns", "news", "links", "square"],
+    "student": ["gameday", "classes", "weather", "dining", "tonight", "countdowns", "news", "links", "square"],
     "fan": ["gameday", "weather", "tonight", "countdowns", "news", "square"],
     "alumni": ["gameday", "weather", "tonight", "countdowns", "news", "square"],
 }
