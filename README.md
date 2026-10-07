@@ -78,7 +78,7 @@ If a widget stays on "Loading for the first time", look for a `! news failed:` l
 
 ## Chrome extension (new tab)
 
-`extension/` is a small Chrome extension that makes Grove your new tab page. It shows the live site full-screen, so updates to the site reach everyone without a new extension release. It asks for no permissions. If the site can't be reached, the tab shows a clock and a "Try again" link instead of an error.
+`extension/` is a small Chrome extension that makes Grove your new tab page. It shows the live site full-screen, so updates to the site reach everyone without a new extension release. Its only permission is `search`: the search bar uses the person's own default search engine through Chrome's `chrome.search` API. On the plain website, the search bar goes to Google. If the site can't be reached, the tab shows a clock and a "Try again" link instead of an error.
 
 **Try it locally**
 1. Run the site (`python -m flask --app grove.web run`). `extension/config.js` points at `http://127.0.0.1:5000` by default.

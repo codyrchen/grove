@@ -262,6 +262,66 @@
   nameInput.addEventListener("change", function () { setName(nameInput.value); });
   setName(getName());
 
+  // ---------- search ----------
+  // "om parking" searches olemiss.edu. In the Chrome extension, the query goes to the extension,
+  // which searches with the person's own default search engine (chrome.search).
+
+  var SEARCH_KEY = "grove.search";
+  var searchForm = document.getElementById("search");
+  var searchInput = document.getElementById("search-input");
+  var searchToggle = document.getElementById("search-toggle");
+
+  function searchQuery(text) {
+    var m = /^om\s+(.+)/i.exec(text);
+    return m ? "site:olemiss.edu " + m[1] : text;
+  }
+
+  // The extension page that frames us, if any (Chrome lists ancestor origins).
+  function extensionParent() {
+    if (window.top === window || !location.ancestorOrigins || !location.ancestorOrigins.length) return null;
+    var origin = location.ancestorOrigins[0];
+    return origin.indexOf("chrome-extension://") === 0 ? origin : null;
+  }
+
+  searchForm.addEventListener("submit", function (e) {
+    var text = searchInput.value.trim();
+    if (!text) { e.preventDefault(); return; }
+    var q = searchQuery(text);
+    var parent = extensionParent();
+    if (parent) {
+      e.preventDefault();
+      window.parent.postMessage({ type: "grove-search", query: q }, parent);
+      return;
+    }
+    searchInput.value = q;  // the form submits to Google in the same tab
+  });
+
+  function searchShown() {
+    try { return localStorage.getItem(SEARCH_KEY) !== "off"; } catch (e) { return true; }
+  }
+
+  function applySearch() {
+    document.body.classList.toggle("search-hidden", !searchShown());
+  }
+
+  searchToggle.addEventListener("change", function () {
+    try { localStorage.setItem(SEARCH_KEY, searchToggle.checked ? "on" : "off"); } catch (e) { /* ignore */ }
+    applySearch();
+  });
+
+  // "/" jumps to the search bar, unless you're already typing somewhere.
+  document.addEventListener("keydown", function (e) {
+    var t = e.target;
+    var typing = t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+    if (e.key === "/" && !typing && searchShown() && !document.body.classList.contains("studying")) {
+      e.preventDefault();
+      searchInput.focus();
+    }
+  });
+
+  applySearch();
+  if (searchShown() && window.matchMedia("(min-width: 768px)").matches) searchInput.focus();
+
   // ---------- study mode: big clock + focus timer ----------
 
   var studyBtn = document.getElementById("study-btn");
@@ -460,6 +520,7 @@
   document.getElementById("settings").addEventListener("show.bs.modal", function () {
     syncSettings();
     nameInput.value = getName();
+    searchToggle.checked = searchShown();
   });
 
   // ---------- start ----------

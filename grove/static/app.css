@@ -258,3 +258,17 @@ a { color: inherit; }
   .photo-credit { position: static; display: inline-block; margin: 0 1rem; }
   .home-footer { padding-bottom: 1.5rem; }
 }
+
+/* search */
+.search {
+  position: relative; max-width: 640px; margin: 1.75rem auto 0; text-shadow: none;
+}
+.search .bi { position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%); color: #5f6b85; font-size: 1.1rem; }
+.search input {
+  width: 100%; border: 0; outline: 0; border-radius: 999px;
+  padding: .95rem 1.25rem .95rem 3.1rem; font-size: 1.05rem; color: #1d2433;
+  background: rgba(255, 255, 255, .95); box-shadow: 0 8px 28px rgba(0, 0, 0, .3);
+}
+.search input:focus { box-shadow: 0 0 0 4px rgba(143, 200, 242, .55), 0 8px 28px rgba(0, 0, 0, .3); }
+.search input::placeholder { color: #7a8499; }
+.search-hidden .search { display: none; }

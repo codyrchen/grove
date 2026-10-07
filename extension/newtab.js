@@ -24,6 +24,19 @@
 
   if (!url) { offline(); return; }
 
+  // Searches typed into Grove arrive here and go to the person's own default search engine.
+  window.addEventListener("message", function (e) {
+    if (e.source !== frame.contentWindow || e.origin !== new URL(url).origin) return;
+    var data = e.data || {};
+    if (data.type !== "grove-search" || typeof data.query !== "string" || !data.query.trim()) return;
+    var text = data.query.trim().slice(0, 500);
+    if (window.chrome && chrome.search && chrome.search.query) {
+      chrome.search.query({ text: text, disposition: "CURRENT_TAB" });
+    } else {
+      location.href = "https://www.google.com/search?q=" + encodeURIComponent(text);
+    }
+  });
+
   // Check the site is reachable first: a cross-origin iframe can't report load errors.
   fetch(url + "/healthz", { mode: "no-cors", cache: "no-store" })
     .then(function () {

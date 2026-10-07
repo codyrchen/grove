@@ -26,6 +26,11 @@
       <button class="hero-name" id="hero-name" type="button" title="Click to change your name">Rebel</button>
     </h1>
     <div class="hero-date" id="greeting-date">{{ greeting.date }}</div>
+    <form class="search" id="search" role="search" action="https://www.google.com/search" method="get" target="_top">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <input type="search" name="q" id="search-input" placeholder="Search the web, or try “om parking”"
+             aria-label="Search the web" autocomplete="off" spellcheck="false">
+    </form>
     <div class="hero-pill {% if not greeting.semester_week %}d-none{% endif %}" id="greeting-week">
       {% if greeting.semester_week %}Week {{ greeting.semester_week }} of the semester{% endif %}
     </div>
@@ -76,6 +81,10 @@
       <div class="modal-body">
         <label class="h6 fw-semibold d-block" for="name-input">Your name</label>
         <input class="form-control mb-4" id="name-input" maxlength="40" placeholder="Rebel" autocomplete="given-name">
+        <div class="form-check form-switch mb-4">
+          <input class="form-check-input" type="checkbox" role="switch" id="search-toggle">
+          <label class="form-check-label" for="search-toggle">Show the search bar</label>
+        </div>
         <h3 class="h6 fw-semibold">Widgets</h3>
         <div id="widget-toggles" class="mb-4">
           {% for id, title in widgets.items() %}
