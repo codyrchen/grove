@@ -609,9 +609,7 @@
       var g = el("div", "links-grid");
       d.links.forEach(function (l) {
         var a = link(l.url, null);
-        var i = icon(l.icon);
-        if (l.color) i.style.setProperty("--tile", l.color);
-        a.appendChild(i);
+        a.appendChild(icon(l.icon));
         a.appendChild(el("span", null, l.label));
         g.appendChild(a);
       });
@@ -628,11 +626,7 @@
 
     var head = el("div", "widget-head");
     head.appendChild(icon(ICONS[id] || "square"));
-    // "Campus News" -> "Campus <accent>News</accent>", like Today's "What's for Breakfast?"
-    var words = WIDGETS[id].split(" ");
-    var title = el("span", null, words.length > 1 ? words.slice(0, -1).join(" ") + " " : "");
-    title.appendChild(el("span", words.length > 1 ? "accent" : null, words[words.length - 1]));
-    head.appendChild(title);
+    head.appendChild(el("span", "widget-title", WIDGETS[id]));
     if (w.updated_ago) head.appendChild(el("span", "updated", w.updated_ago));
     node.appendChild(head);
 

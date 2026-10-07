@@ -412,3 +412,213 @@ a { color: inherit; }
 .gameday-pill.live::before { content: "● "; color: #fff; animation: blink 1.2s infinite; }
 @media (prefers-reduced-motion: reduce) { .gameday-pill.live::before { animation: none; } }
 .gameday-pill.win, .gameday-pill.live { background: var(--red); border-color: transparent; box-shadow: 0 4px 18px rgba(206, 17, 38, .5); }
+
+/* =====================================================================
+   Southern editorial theme: serif headlines, cream on navy, hairlines,
+   and cardinal red only for live / game-day moments.
+   ===================================================================== */
+.home {
+  --cream: #f4efe6;
+  --ink: #0c1426;
+  --glass: rgba(12, 20, 38, .62);
+  --hair: rgba(244, 239, 230, .14);
+  --hair-strong: rgba(244, 239, 230, .28);
+  --muted: rgba(244, 239, 230, .62);
+  --sage: #a9c9a4;
+  --gold: #dcc58f;
+  --serif: "Cormorant Garamond", "Cormorant", Georgia, "Times New Roman", serif;
+  color: var(--cream);
+  background: var(--ink);
+}
+.home::before {
+  background-image:
+    radial-gradient(1100px 520px at 50% -10%, rgba(244, 239, 230, .10), transparent 65%),
+    radial-gradient(900px 600px at 0% 100%, rgba(206, 17, 38, .16), transparent 60%),
+    linear-gradient(170deg, #0e1830 0%, #14213d 50%, #1a1626 100%);
+}
+.home.has-photo::before {
+  /* An oval of shade behind the headline, plus top and bottom shading, so cream type
+     reads on bright photos without boxes. */
+  background-image:
+    radial-gradient(ellipse 62% 50% at 50% 30%, rgba(8, 12, 24, .58), transparent 74%),
+    linear-gradient(180deg, rgba(8, 12, 24, .55) 0%, rgba(8, 12, 24, .3) 40%, rgba(8, 12, 24, .32) 62%, rgba(8, 12, 24, .7) 100%),
+    var(--photo);
+}
+.home.gameday::before { box-shadow: inset 0 2px 0 var(--red); }
+.home .text-muted { color: var(--muted) !important; }
+
+/* small caps label used throughout */
+.home .widget-head, .home .game-label, .hero-kicker, .hero-date, .home .study-btn,
+.home .game-badge, .home .event-chip, .home .role-choice {
+  font-family: "Inter", system-ui, sans-serif; text-transform: uppercase; letter-spacing: .18em;
+}
+
+/* top bar */
+.home .home-brand { font-weight: 600; letter-spacing: .02em; color: var(--cream); }
+.home .brand-mark { width: 28px; height: 28px; border-radius: 7px; font-size: .9rem; }
+.home .glass-btn { background: transparent; border: 1px solid var(--hair-strong); color: var(--cream); font-weight: 500; }
+.home .glass-btn:hover { background: rgba(244, 239, 230, .08); }
+.home .study-btn {
+  background: transparent; color: var(--cream); border: 1px solid var(--hair-strong); border-radius: 999px;
+  padding: .5rem 1.1rem; font-size: .68rem; font-weight: 600; box-shadow: none;
+}
+.home .study-btn:hover { background: rgba(244, 239, 230, .1); }
+.home.finals .study-btn { border-color: var(--cream); }
+
+/* hero */
+.home .hero { padding: 3vh 0 5vh; text-shadow: 0 1px 18px rgba(0, 0, 0, .35); }
+.hero-kicker { font-size: .68rem; font-weight: 600; letter-spacing: .32em; opacity: .85; margin-bottom: 1.4rem; }
+.home .hero-hello {
+  font-family: var(--serif); font-weight: 500; letter-spacing: -.005em; line-height: 1;
+  font-size: clamp(2.9rem, 7.2vw, 6rem);
+}
+.home .hero-name { font-style: italic; border-bottom: 1px solid transparent; color: inherit; }
+.home .hero-name:hover, .home .hero-name:focus-visible { border-bottom-color: var(--cream); color: inherit; }
+.home .hero-name-input { font-style: italic; border-bottom: 1px solid var(--cream); }
+.home .hero-date { font-size: .74rem; font-weight: 600; letter-spacing: .3em; margin-top: 1.1rem; opacity: .92; }
+.hero-rule { width: 44px; height: 1px; margin: 1.3rem auto 0; background: var(--hair-strong); }
+
+/* search */
+.home .search { max-width: 560px; margin-top: 1.6rem; }
+.home .search .bi { color: var(--cream); opacity: .7; left: 1.05rem; font-size: 1rem; z-index: 1; }
+.home .search input {
+  border-radius: 10px; padding: .8rem 1.1rem .8rem 2.8rem; font-size: 1rem; color: var(--cream);
+  background: rgba(12, 20, 38, .5); border: 1px solid var(--hair-strong); box-shadow: none;
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+}
+.home .search input::placeholder { color: var(--muted); }
+.home .search input:focus { border-color: rgba(244, 239, 230, .6); box-shadow: none; }
+
+/* one status line: only the first visible item shows, as quiet text with a dot */
+.hero-status { margin-top: 1.25rem; min-height: 1.5rem; }
+.hero-status > .hero-pill:not(.d-none) ~ .hero-pill:not(.d-none) { display: none !important; }
+.home .hero-status .hero-pill {
+  display: inline-flex; align-items: center; gap: .55rem; margin: 0; padding: 0;
+  background: none; border: 0; box-shadow: none; border-radius: 0;
+  font-size: .92rem; font-weight: 500; letter-spacing: .01em; color: var(--cream);
+}
+.home .hero-status .hero-pill::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--cream); opacity: .7; animation: none;
+}
+.home .hero-status .gameday-pill::before, .home.gameday .hero-status .gameday-pill::before { background: var(--red); opacity: 1; }
+.home .hero-status .gameday-pill.live::before { animation: blink 1.2s infinite; }
+.home .hero-trivia {
+  display: block; max-width: 560px; margin: 1.1rem auto 0; padding: 0; border-radius: 0;
+  background: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  font-family: var(--serif); font-style: italic; font-size: 1.12rem; line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .6), 0 1px 14px rgba(0, 0, 0, .7);
+}
+
+/* cards */
+.home .widget {
+  border-radius: 14px; background: var(--glass); border: 1px solid var(--hair); box-shadow: none; color: var(--cream);
+  -webkit-backdrop-filter: blur(16px) saturate(120%); backdrop-filter: blur(16px) saturate(120%);
+  animation: rise .5s ease both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.home .widget-head { padding: 1.15rem 1.5rem .15rem; font-size: .68rem; font-weight: 600; color: var(--muted); }
+.home .widget-head .updated { text-transform: none; letter-spacing: 0; font-size: .72rem; font-weight: 400; }
+.home .widget-body { padding: .75rem 1.5rem 1.5rem; }
+.home .widget-stale { color: var(--gold); background: rgba(220, 197, 143, .1); margin: .4rem 1.5rem 0; border-radius: 6px; }
+.home .widget-note { color: var(--muted); }
+
+/* serif numerals and headlines inside cards */
+.home .wx-temp, .home .game-matchup, .home .game-score-num, .home .countdown-days, .home .class-next-label,
+.home .square-name, .home .study-clock, .home .study-time, .home .news-list a {
+  font-family: var(--serif); font-weight: 500; letter-spacing: 0;
+  font-variant-numeric: lining-nums;  /* Cormorant's default old-style 1 looks like an I */
+}
+.home .hero-hello { font-variant-numeric: lining-nums; }
+.home .countdown-days small { font-family: "Inter", system-ui, sans-serif; font-size: .58rem; letter-spacing: .08em; }
+.home .game-label { font-size: .64rem; font-weight: 600; color: var(--muted); }
+
+/* weather */
+.home .wx-now .bi, .home .wx-hours .bi, .home .wx-hours .bi-moon-stars, .home .wx-hours .bi-cloud-moon { color: var(--cream); }
+.home .wx-now .bi { font-size: 2.2rem; }
+.home .wx-temp { font-size: 3.2rem; }
+.home .wx-hours { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--hair); font-weight: 500; font-size: .9rem; }
+.home .wx-hours > div + div { border-left: 1px solid var(--hair); }
+.home .wx-hours .bi { font-size: 1.35rem; opacity: .9; }
+
+/* hairline dividers */
+.home .news-list li, .home .event-list li, .home .dining-list li { border-top-color: var(--hair); }
+.home .game-list, .home .game-tips, .home .game-score { border-color: var(--hair); }
+
+/* news */
+.home .news-list a { font-size: 1.3rem; line-height: 1.2; color: var(--cream); }
+.home .news-list img { border-radius: 6px; filter: saturate(.85); }
+
+/* game day */
+.home .game-matchup { font-size: 2.1rem; }
+.home .game-score-num { font-size: 2.6rem; }
+.home .game-score-team { font-weight: 500; }
+.home .game-badge {
+  display: inline-flex; align-items: center; gap: .45rem; background: none; padding: 0;
+  color: var(--cream); font-size: .64rem; font-weight: 700;
+}
+.home .game-badge::before, .home .game-badge.live::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--red);
+}
+.home .game-badge.live::before { animation: blink 1.2s infinite; }
+.home .is-win .game-result { color: var(--sage); }
+.home .game-forecast { background: rgba(244, 239, 230, .07); border: 1px solid var(--hair); }
+.home .game-forecast .bi { color: var(--cream); }
+.home .game-note { color: var(--gold); }
+
+/* classes, countdowns, square */
+.home .class-next-label { font-size: 2.1rem; }
+.home .countdown-days {
+  background: none; border: 1px solid var(--hair); font-size: 1.7rem; border-radius: 10px; min-width: 3.6rem;
+}
+.home .countdown-add-btn { color: var(--cream); opacity: .8; text-decoration: underline; text-underline-offset: 3px; }
+.home .square-name { font-size: 1.8rem; }
+.home .square-deal { background: rgba(220, 197, 143, .12); color: var(--gold); font-weight: 600; }
+
+/* events and dining */
+.home .event-chip { font-size: .62rem; border-color: var(--hair-strong); color: var(--muted); }
+.home .event-chip.active { background: rgba(244, 239, 230, .12); color: var(--cream); }
+.home .event-time.now { color: var(--sage); }
+.home .event-food { background: rgba(169, 201, 164, .14); color: var(--sage); }
+.home .is-open .dining-dot { background: var(--sage); box-shadow: none; }
+.home .dining-status.soon { color: var(--gold); }
+.home .dining-list a, .home .square-name a { color: var(--cream); }
+
+/* quick links: outlined monochrome circles */
+.home .links-grid .bi {
+  width: 3rem; height: 3rem; border-radius: 50%; background: transparent; border: 1px solid var(--hair-strong);
+  color: var(--cream); box-shadow: none; font-size: 1.15rem;
+}
+.home .links-grid a { color: var(--cream); font-weight: 500; }
+.home .links-grid a:hover .bi { background: rgba(244, 239, 230, .1); transform: none; }
+
+/* photo credit and footer */
+.home .photo-credit { background: rgba(12, 20, 38, .45); border-color: var(--hair); font-size: .72rem; letter-spacing: .04em; }
+.home .home-footer { color: var(--muted); font-size: .74rem; letter-spacing: .02em; }
+.home .home-footer a { color: var(--cream); }
+
+/* study mode */
+.home .study-clock { font-size: clamp(4.5rem, 15vw, 11rem); font-weight: 400; }
+.home .study-timer { border-radius: 14px; background: var(--glass); border: 1px solid var(--hair); }
+.home .study-time { font-size: 3.6rem; }
+.home .study-go { background: var(--cream); color: var(--ink); }
+.home .study-modes button.active { background: rgba(244, 239, 230, .12); }
+
+/* modals */
+.home .modal-content { background: #111a2e; color: var(--cream); border: 1px solid var(--hair); border-radius: 14px; }
+.home .modal-title, .home #welcome-title { font-family: var(--serif); font-weight: 500; font-size: 1.9rem; }
+.home .btn-grove { background: var(--cream); border-color: var(--cream); color: var(--ink); }
+.home .btn-grove:hover, .home .btn-grove:focus { background: #fff; border-color: #fff; color: var(--ink); }
+.home .role-choice { border-color: var(--hair-strong); background: transparent; font-size: .66rem; color: var(--cream); }
+.home .role-choice .bi { color: var(--cream); }
+.home .role-choice:hover, .home .role-choice:focus-visible { background: rgba(244, 239, 230, .08); border-color: var(--cream); }
+.home .form-control, .home .form-select { border-color: var(--hair-strong); }
+
+@media (max-width: 767.98px) {
+  .hero-kicker { margin-bottom: 1rem; }
+  .home .widget-head { padding: 1rem 1.2rem .1rem; }
+  .home .widget-body { padding: .7rem 1.2rem 1.3rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home .widget { animation: none; }
+  .home .hero-status .gameday-pill.live::before, .home .game-badge.live::before { animation: none; }
+}
