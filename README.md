@@ -36,10 +36,16 @@ To add photos:
    ```json
    [
      {"file": "grove-fall.jpg", "place": "The Grove", "credit": "Cody Chen"},
-     {"file": "lyceum-night.jpg", "place": "The Lyceum", "credit": "Jane Doe", "credit_url": "https://instagram.com/..."}
+     {"file": "stadium.jpg", "place": "Vaught-Hemingway Stadium", "credit": "Jane Doe",
+      "source_url": "https://www.flickr.com/photos/...", "license": "CC BY 2.0",
+      "license_url": "https://creativecommons.org/licenses/by/2.0/", "resized": true}
    ]
    ```
-   `place` and the credit show in the corner of the page.
+   `place`, the credit and the license show in the corner of the page:
+   - `credit_url` links the photographer's name to their page. Without it, the name links to `source_url`, the photo's own page.
+   - For openly licensed photos (Creative Commons), always fill in `source_url`, `license` and `license_url`; the license requires them. Set `"resized": true` if you shrank the photo.
+
+**Where to find photos:** [Openverse](https://openverse.org) with the "Use commercially" filter turned on. It searches Flickr and Wikimedia Commons and only shows photos you're allowed to use. Search "University of Mississippi", "Ole Miss", "Lyceum" or "Oxford Mississippi". Download the original file, not a screenshot.
 
 **Only use photos you took or have written permission to use.** Most photos online, including the university's own, are copyrighted. Also avoid photos where the university's logos are the main subject. To collect photos from the community, make a form (for example a Google Form with a file upload and a "this is my photo" checkbox) and set `PHOTO_SUBMIT_URL` to its link. The About page then shows a **Submit a photo** button.
 

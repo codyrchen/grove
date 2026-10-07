@@ -81,7 +81,15 @@ def photo_of_the_day(now: datetime | None = None, directory: Path = PHOTOS_DIR) 
     today = (now or datetime.now(timezone.utc)).astimezone(CAMPUS_TZ).date()
     p = available[today.toordinal() % len(available)]
     return {"url": f"/static/photos/{p['file']}", "place": p.get("place"),
-            "credit": p.get("credit"), "credit_url": p.get("credit_url")}
+            "credit": p.get("credit"),
+            # Link the name to the photographer's page, or else to the photo's source page.
+            "credit_url": _web_url(p.get("credit_url")) or _web_url(p.get("source_url")),
+            "license": p.get("license"), "license_url": _web_url(p.get("license_url")),
+            "resized": bool(p.get("resized"))}
+
+
+def _web_url(url) -> str | None:
+    return url if isinstance(url, str) and url.startswith(("https://", "http://")) else None
 
 
 def stored(conn: db.DB, name: str, now: datetime | None = None) -> dict:

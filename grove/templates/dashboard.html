@@ -59,6 +59,10 @@
     {{ photo.place or "Ole Miss" }}{% if photo.credit %} · Photo by
       {% if photo.credit_url %}<a href="{{ photo.credit_url }}" target="_blank" rel="noopener">{{ photo.credit }}</a>
       {% else %}{{ photo.credit }}{% endif %}{% endif %}
+    {%- if photo.license %} ·
+      {% if photo.license_url %}<a href="{{ photo.license_url }}" target="_blank" rel="noopener license">{{ photo.license }}</a>
+      {%- else %}{{ photo.license }}{% endif %}{% if photo.resized %} (resized){% endif %}
+    {%- endif %}
   {% endif %}
 </div>
 

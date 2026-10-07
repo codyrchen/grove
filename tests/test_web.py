@@ -74,7 +74,10 @@ def test_photo_of_the_day(tmp_path):
     (tmp_path / "grove.jpg").write_bytes(b"x")
     (tmp_path / "lyceum.jpg").write_bytes(b"x")
     (tmp_path / "photos.json").write_text(
-        '[{"file": "grove.jpg", "place": "The Grove", "credit": "Cody"},'
+        '[{"file": "grove.jpg", "place": "The Grove", "credit": "Cody",'
+        '  "source_url": "https://commons.wikimedia.org/wiki/File:Grove.jpg",'
+        '  "license": "CC BY-SA 4.0", "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",'
+        '  "resized": true},'
         ' {"file": "lyceum.jpg", "place": "The Lyceum"},'
         ' {"file": "missing.jpg", "place": "Not on disk"},'
         ' {"file": "../secret.jpg"}]')
@@ -84,9 +87,28 @@ def test_photo_of_the_day(tmp_path):
     p2 = widgets.photo_of_the_day(day2, tmp_path)
     assert {p1["place"], p2["place"]} == {"The Grove", "The Lyceum"}
     assert p1["url"].startswith("/static/photos/")
+    grove = p1 if p1["place"] == "The Grove" else p2
+    assert grove["credit_url"] == "https://commons.wikimedia.org/wiki/File:Grove.jpg"
+    assert (grove["license"], grove["resized"]) == ("CC BY-SA 4.0", True)
+    lyceum = p2 if grove is p1 else p1
+    assert lyceum["license"] is None and lyceum["credit_url"] is None
     # Same photo all day in Oxford, even across the UTC date line (11 p.m. CDT is 04:00 UTC).
     assert widgets.photo_of_the_day(datetime(2026, 10, 8, 4, 0, tzinfo=timezone.utc), tmp_path) == p1
 
 
 def test_no_photos_means_none(tmp_path):
     assert widgets.photo_of_the_day(directory=tmp_path) is None
+
+
+def test_dashboard_shows_photo_credit_and_license(client, monkeypatch):
+    monkeypatch.setattr(widgets, "photo_of_the_day", lambda: {
+        "url": "/static/photos/stadium.jpg", "place": "Vaught-Hemingway Stadium",
+        "credit": "Jane Doe", "credit_url": "https://www.flickr.com/photos/jane/1",
+        "license": "CC BY 2.0", "license_url": "https://creativecommons.org/licenses/by/2.0/",
+        "resized": True})
+    html = client.get("/").get_data(as_text=True)
+    assert "--photo: url('/static/photos/stadium.jpg')" in html
+    assert "Vaught-Hemingway Stadium" in html
+    assert '<a href="https://www.flickr.com/photos/jane/1"' in html and "Jane Doe" in html
+    assert '<a href="https://creativecommons.org/licenses/by/2.0/"' in html
+    assert "CC BY 2.0</a> (resized)" in html
