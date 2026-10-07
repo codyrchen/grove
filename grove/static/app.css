@@ -344,3 +344,26 @@ a { color: inherit; }
 .role-choice:hover, .role-choice:focus-visible { background: rgba(143, 200, 242, .15); border-color: var(--sky); }
 .home .form-select { background-color: rgba(255, 255, 255, .08); border-color: var(--glass-border); color: #fff; }
 .home .form-select option { color: #000; }
+
+/* tonight in oxford */
+.event-chips { display: flex; gap: .4rem; margin-bottom: .6rem; }
+.event-chip {
+  border: 1px solid var(--glass-border); background: transparent; color: var(--muted);
+  border-radius: 999px; padding: .2rem .75rem; font-weight: 600; font-size: .85rem;
+}
+.event-chip.active { background: rgba(255, 255, 255, .14); color: #fff; }
+.event-group + .event-group { margin-top: .75rem; }
+.event-list { list-style: none; padding: 0; margin: .25rem 0 0; }
+.event-list li { display: flex; gap: .8rem; padding: .45rem 0; border-top: 1px solid rgba(143, 200, 242, .2); }
+.event-list li:first-child { border-top: 0; }
+.event-time { min-width: 4.6rem; color: var(--muted); font-weight: 600; font-size: .9rem; padding-top: .1rem; }
+.event-time.now { color: #7ee2a8; }
+.event-list.with-day .event-time { min-width: 6.6rem; white-space: nowrap; }
+.event-text { min-width: 0; }
+.event-text a, .event-text > span { font-weight: 700; text-decoration: none; color: #fff; }
+.event-text a:hover { text-decoration: underline; }
+.event-meta { color: var(--muted); font-size: .85rem; }
+.event-food {
+  display: inline-block; margin-left: .4rem; padding: 0 .5rem; border-radius: 999px;
+  background: rgba(126, 226, 168, .18); color: #7ee2a8; font-weight: 700; font-size: .75rem;
+}

@@ -38,6 +38,16 @@ The refresher reads them every 3 hours, so time changes (like "TBA" becoming a k
 
 Live scores aren't included yet; they need a live data source.
 
+## Tonight in Oxford
+
+The **Tonight in Oxford** card lists what's still on today (tonight's events first), then the next three days. Events whose title or description mention food (pizza, snacks, cookout, refreshments…) get a **Free food** tag, and a filter button shows only those.
+
+Events come from calendar (.ics) links, the same way as game day. Campus event calendars and many Oxford venues and city calendars offer an "Export", "Subscribe" or "iCal" link. Set them as label=url pairs:
+```
+EVENTS_CALENDARS=campus=https://.../events.ics oxford=https://.../calendar.ics
+```
+The same event appearing in two feeds is shown once. The card stays hidden until at least one feed has events.
+
 ## Campus photos
 
 The background is a **photo of the day**. Everyone sees the same photo, and it changes at midnight in Oxford. Until any photos are added, the page uses a navy and cardinal gradient.

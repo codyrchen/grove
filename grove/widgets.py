@@ -21,7 +21,7 @@ QUICK_LINKS = [
 ]
 
 # Data older than this many seconds is flagged as stale (the source has been failing).
-STALE_AFTER = {"weather": 3 * 3600, "news": 12 * 3600, "gameday": 24 * 3600}
+STALE_AFTER = {"weather": 3 * 3600, "news": 12 * 3600, "gameday": 24 * 3600, "events": 12 * 3600}
 
 
 def time_ago(iso: str | None, now: datetime | None = None) -> str | None:
@@ -191,6 +191,47 @@ def gameday(conn: db.DB, now: datetime | None = None) -> dict:
     return out
 
 
+EVENING = 16  # "tonight" starts at 4 p.m. in Oxford
+
+
+def _event_window(e: dict) -> tuple[datetime, datetime]:
+    if e.get("all_day"):
+        d = date.fromisoformat(e["start"][:10])
+        start = datetime(d.year, d.month, d.day, tzinfo=CAMPUS_TZ)
+        return start, start + timedelta(days=1)
+    start = datetime.fromisoformat(e["start"])
+    end = datetime.fromisoformat(e["end"]) if e.get("end") else start + timedelta(hours=2)
+    return start, max(end, start)
+
+
+def tonight(conn: db.DB, now: datetime | None = None) -> dict:
+    """Events still to come today (with tonight's first), then the next few days."""
+    out = stored(conn, "events", now)
+    if out["data"] is None:
+        out["empty"] = True
+        return out
+    now = now or datetime.now(timezone.utc)
+    today = now.astimezone(CAMPUS_TZ).date()
+    today_list, later = [], []
+    for e in out["data"].get("events", []):
+        start, end = _event_window(e)
+        if end <= now:
+            continue
+        local = start.astimezone(CAMPUS_TZ)
+        item = {**e, "local_date": local.date().isoformat(),
+                "evening": not e.get("all_day") and local.hour >= EVENING, "happening": start <= now}
+        if local.date() <= today:
+            today_list.append(item)
+        elif (local.date() - today).days <= 3:
+            later.append(item)
+    # Tonight's events first, then the rest of today; all-day events last.
+    today_list.sort(key=lambda e: (e["all_day"], not e["evening"], e["start"]))
+    out["data"] = {"today": today_list[:8], "soon": later[:8],
+                   "food_count": sum(e["food"] for e in today_list + later)}
+    out["empty"] = not (today_list or later)
+    return out
+
+
 def build(conn: db.DB, name: str) -> dict:
     if name == "greeting":
         return {"data": {**greeting(), "moment": current_moment(), "trivia": trivia_of_the_day(),
@@ -204,6 +245,8 @@ def build(conn: db.DB, name: str) -> dict:
         return {"data": photo_of_the_day()}
     if name == "gameday":
         return gameday(conn)
+    if name == "tonight":
+        return tonight(conn)
     if name == "links":
         return {"data": {"links": QUICK_LINKS}}
     return stored(conn, name)
@@ -213,6 +256,7 @@ def build(conn: db.DB, name: str) -> dict:
 WIDGETS = {
     "gameday": "Game Day",
     "weather": "Weather",
+    "tonight": "Tonight in Oxford",
     "countdowns": "Countdowns",
     "news": "Campus News",
     "links": "Quick Links",
@@ -221,7 +265,7 @@ WIDGETS = {
 
 # Widgets each kind of visitor starts with (they can turn any on or off later).
 ROLES = {
-    "student": ["gameday", "weather", "countdowns", "news", "links", "square"],
-    "fan": ["gameday", "weather", "countdowns", "news", "square"],
-    "alumni": ["gameday", "weather", "countdowns", "news", "square"],
+    "student": ["gameday", "weather", "tonight", "countdowns", "news", "links", "square"],
+    "fan": ["gameday", "weather", "tonight", "countdowns", "news", "square"],
+    "alumni": ["gameday", "weather", "tonight", "countdowns", "news", "square"],
 }

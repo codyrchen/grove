@@ -5,7 +5,8 @@
   var WIDGETS = {};                             // id -> title
   window.GROVE_WIDGETS.forEach(function (w) { WIDGETS[w[0]] = w[1]; });
   var ICONS = { weather: "cloud-sun", news: "newspaper", links: "link-45deg", gameday: "trophy",
-                countdowns: "hourglass-split", square: "shop" };
+                countdowns: "hourglass-split", square: "shop", tonight: "stars" };
+  var foodOnly = false;                         // "Free food" filter on the Tonight card
   var ROLES = window.GROVE_ROLES;               // role -> widgets it starts with
   var ROLE_KEY = "grove.role";
   var COUNTDOWN_KEY = "grove.countdowns";
@@ -208,6 +209,38 @@
     return wrap;
   }
 
+  // ---------- events ----------
+
+  function eventTime(e, withDay) {
+    if (e.happening && !e.all_day) return "Now";
+    var d = e.all_day ? new Date(e.start + "T12:00:00") : new Date(e.start);
+    var day = withDay ? d.toLocaleDateString([], { weekday: "short" }) + " " : "";
+    if (e.all_day) return day + (withDay ? "" : "All day");
+    return day + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+
+  function eventList(label, list, withDay) {
+    var wrap = el("div", "event-group");
+    wrap.appendChild(el("div", "game-label", label));
+    var ul = el("ul", "event-list" + (withDay ? " with-day" : ""));
+    list.forEach(function (e) {
+      var li = el("li");
+      li.appendChild(el("span", "event-time" + (e.happening ? " now" : ""), eventTime(e, withDay)));
+      var text = el("div", "event-text");
+      text.appendChild(e.url ? link(e.url, e.title) : el("span", null, e.title));
+      var meta = [e.location].filter(Boolean).join(" · ");
+      if (meta || e.food) {
+        var m = el("div", "event-meta", meta);
+        if (e.food) m.appendChild(el("span", "event-food", "Free food"));
+        text.appendChild(m);
+      }
+      li.appendChild(text);
+      ul.appendChild(li);
+    });
+    wrap.appendChild(ul);
+    return wrap;
+  }
+
   // ---------- widget renderers ----------
 
   var render = {
@@ -339,6 +372,28 @@
                                   : "Counting down to your next trip back to Oxford?"));
       }
       body.appendChild(countdownForm());
+    },
+
+    tonight: function (d, body) {
+      if (d.food_count) {
+        var chips = el("div", "event-chips");
+        [["All", false], ["Free food (" + d.food_count + ")", true]].forEach(function (c) {
+          var b = el("button", "event-chip" + (foodOnly === c[1] ? " active" : ""), c[0]);
+          b.type = "button";
+          b.setAttribute("aria-pressed", String(foodOnly === c[1]));
+          b.addEventListener("click", function () { foodOnly = c[1]; draw(); });
+          chips.appendChild(b);
+        });
+        body.appendChild(chips);
+      }
+      function keep(e) { return !foodOnly || e.food; }
+      var today = d.today.filter(keep), soon = d.soon.filter(keep);
+      if (today.length) body.appendChild(eventList("Today", today, false));
+      if (soon.length) body.appendChild(eventList("Coming up", soon, true));
+      if (!today.length && !soon.length) {
+        body.appendChild(el("div", "widget-note", foodOnly ? "No free food on the calendar right now."
+                                                            : "Nothing on the calendar yet."));
+      }
     },
 
     square: function (d, body) {
