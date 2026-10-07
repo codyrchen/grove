@@ -3,6 +3,8 @@
 {% block body_attrs %}{% if photo %}style="--photo: url('{{ photo.url }}')"{% endif %}{% endblock %}
 
 {% block nav %}
+{# Apply the saved look before anything paints, so there's no flash of the default. #}
+<script>try { var t = localStorage.getItem("grove.theme"); if (t && t !== "editorial") document.body.setAttribute("data-theme", t); } catch (e) {}</script>
 <div class="home-bar">
   <a class="home-brand" href="{{ url_for('about') }}" title="About {{ SITE_NAME }}">
     <span class="brand-mark"><i class="bi bi-tree-fill"></i></span><span>{{ SITE_NAME }}</span>
@@ -90,6 +92,13 @@
       <div class="modal-body">
         <label class="h6 fw-semibold d-block" for="name-input">Your name</label>
         <input class="form-control mb-4" id="name-input" maxlength="40" placeholder="Rebel" autocomplete="given-name">
+        <label class="h6 fw-semibold d-block" for="theme-select">Look</label>
+        <select class="form-select mb-4" id="theme-select">
+          <option value="editorial">Editorial: serif, cream and navy</option>
+          <option value="gameday">Game Day: bold and sporty</option>
+          <option value="magnolia">Magnolia: light paper cards</option>
+          <option value="minimal">Minimal: clean frosted glass</option>
+        </select>
         <label class="h6 fw-semibold d-block" for="role-select">I'm a…</label>
         <select class="form-select mb-1" id="role-select">
           <option value="student">Student</option>

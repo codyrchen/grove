@@ -1045,7 +1045,29 @@
     searchToggle.checked = searchShown();
     document.getElementById("crn-input").value = getCrns();
     document.getElementById("role-select").value = getRole();
+    document.getElementById("theme-select").value = getTheme();
   });
+
+  // ---------- look (theme), saved per browser ----------
+
+  var THEME_KEY = "grove.theme";
+  var THEMES = ["editorial", "gameday", "magnolia", "minimal"];
+
+  function getTheme() {
+    try { var t = localStorage.getItem(THEME_KEY); return THEMES.indexOf(t) >= 0 ? t : "editorial"; }
+    catch (e) { return "editorial"; }
+  }
+
+  function applyTheme(t) {
+    if (t === "editorial") document.body.removeAttribute("data-theme");
+    else document.body.setAttribute("data-theme", t);
+  }
+
+  document.getElementById("theme-select").addEventListener("change", function (e) {
+    try { localStorage.setItem(THEME_KEY, e.target.value); } catch (err) { /* ignore */ }
+    applyTheme(e.target.value);
+  });
+  applyTheme(getTheme());
 
   // ---------- first visit: welcome ----------
 
