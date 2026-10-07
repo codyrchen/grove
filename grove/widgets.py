@@ -205,7 +205,7 @@ def gameday(conn: db.DB, now: datetime | None = None, directory: Path | None = N
     """Next Rebels games, plus today's and this week's football game for game-day mode."""
     out = stored(conn, "gameday", now)
     if out["data"] is None:
-        out["message"] = "The Rebels schedule isn't set up yet."
+        out["empty"] = True  # hidden until GAMEDAY_CALENDARS is set up
         return out
     now = now or datetime.now(timezone.utc)
     today = now.astimezone(CAMPUS_TZ).date()

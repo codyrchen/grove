@@ -95,7 +95,7 @@ def test_widget_tba_game_counts_all_day(conn):
 
 def test_widget_not_set_up(conn):
     w = widgets.gameday(conn)
-    assert w["data"] is None and "isn't set up" in w["message"]
+    assert w["data"] is None and w["empty"] is True
 
 
 def test_kickoff_forecast_and_game_day_info(conn, tmp_path):
