@@ -4,6 +4,7 @@ The feed list is in NEWS_FEEDS (space-separated URLs) so it can change without a
 """
 
 import html
+import html.entities
 import os
 import re
 import xml.etree.ElementTree as ET
@@ -70,8 +71,46 @@ def _safe_url(url: str | None) -> str | None:
     return url if url.startswith(("https://", "http://")) else None
 
 
+XML_ENTITIES = {"amp", "lt", "gt", "quot", "apos"}
+NAMED_ENTITY = re.compile(r"&([A-Za-z][A-Za-z0-9]*);")
+BARE_AMP = re.compile(r"&(?!#[0-9]+;|#x[0-9A-Fa-f]+;|[A-Za-z][A-Za-z0-9]*;)")
+CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+
+def repair(xml_text: str | bytes) -> str:
+    """Fix what commonly breaks real-world feeds: HTML entities like &nbsp; (not valid XML),
+    bare & in text, and stray control characters."""
+    if isinstance(xml_text, bytes):
+        xml_text = xml_text.decode("utf-8", errors="replace")
+
+    def entity(m):
+        name = m.group(1)
+        if name in XML_ENTITIES:
+            return m.group(0)
+        code = html.entities.name2codepoint.get(name)
+        return f"&#{code};" if code else f"&amp;{name};"
+
+    xml_text = NAMED_ENTITY.sub(entity, xml_text)
+    xml_text = BARE_AMP.sub("&amp;", xml_text)
+    return CONTROL_CHARS.sub("", xml_text)
+
+
+def _root(xml_text: str | bytes) -> ET.Element:
+    try:
+        return ET.fromstring(xml_text)
+    except ET.ParseError:
+        fixed = repair(xml_text)
+        try:
+            return ET.fromstring(fixed.encode("utf-8"))
+        except ET.ParseError as e:
+            # Show the text around the problem in the log, so it can be fixed.
+            line, col = e.position
+            snippet = (fixed.splitlines()[line - 1:line] or [""])[0][max(col - 40, 0):col + 40]
+            raise ET.ParseError(f"{e} near {snippet!r}") from None
+
+
 def parse(xml_text: str | bytes) -> list[dict]:
-    root = ET.fromstring(xml_text)
+    root = _root(xml_text)
     items = []
     if root.tag == f"{{{NS['atom']}}}feed":
         for e in root.findall("atom:entry", NS):

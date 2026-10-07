@@ -68,3 +68,8 @@ def test_tonight_happening_now(conn):
 
 def test_tonight_hidden_until_set_up(conn):
     assert widgets.tonight(conn)["empty"] is True
+
+
+def test_ics_unescape_reads_each_escape_once():
+    assert ics.unescape(r"Oxford\, Miss.\nTV: SEC\; ESPN") == "Oxford, Miss.\nTV: SEC; ESPN"
+    assert ics.unescape(r"C:\\new folder") == r"C:\new folder"  # escaped backslash, then a plain "n"

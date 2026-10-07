@@ -93,3 +93,21 @@ def test_news_fetch_with_nothing_raises(monkeypatch):
     monkeypatch.setattr(news.requests, "get", lambda url, **kw: FakeResponse(status=500))
     with pytest.raises(RuntimeError, match="no news items"):
         news.fetch()
+
+
+def test_broken_feed_is_repaired():
+    items = news.parse((FIXTURES / "news_broken.xml").read_bytes())
+    assert [i["title"] for i in items] == [
+        "Rebels & Friends Celebrate – Homecoming", "Unknown entity &madeup; stays readable"]
+    assert items[0]["url"] == "https://news.olemiss.edu/homecoming/?a=1&b=2"
+    assert items[0]["summary"] == "Food & fun on the Square…"
+
+
+def test_good_feed_is_not_touched():
+    # Valid XML never goes through repair (so a literal "&amp;nbsp;" stays as written).
+    assert news.repair("<a>&amp;nbsp;</a>") == "<a>&amp;nbsp;</a>"
+
+
+def test_unrepairable_feed_error_shows_context():
+    with pytest.raises(Exception, match="near '.*<oops"):
+        news.parse(b"<rss><channel><item><title>Fine</title></item><oops </channel></rss>")

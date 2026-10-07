@@ -18,9 +18,12 @@ def unfold(text: str) -> list[str]:
     return lines
 
 
+_ESCAPE = re.compile(r"\\([\\;,nN])")
+
+
 def unescape(value: str) -> str:
-    return (value.replace("\\n", "\n").replace("\\N", "\n").replace("\\,", ",")
-                 .replace("\;", ";").replace("\\\\", "\\")).strip()
+    """Undo iCalendar text escaping (\\n, \\, \\; \\\\) in one pass, so each escape is read once."""
+    return _ESCAPE.sub(lambda m: "\n" if m.group(1) in "nN" else m.group(1), value).strip()
 
 
 def parse_when(params: str, value: str) -> tuple[str | None, bool]:
