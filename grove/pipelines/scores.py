@@ -1,10 +1,10 @@
-"""Live Rebels football scores from ESPN's public scoreboard feed.
+"""Live Rebels scores (football, basketball, baseball) from ESPN's public scoreboard feeds.
 
-This feed is unofficial (no key, used by many hobby apps) and could change without notice,
-so everything here fails soft: if it breaks, the Game Day card just shows the schedule.
+These feeds are unofficial (no key, used by many hobby apps) and could change without notice,
+so everything here fails soft: if one breaks, the Game Day card just shows the schedule.
 
-To be polite, ESPN is only asked on game days, from an hour before kickoff until the game
-is final: once a minute on our server, shared by every visitor. Otherwise nothing is fetched.
+To be polite, ESPN is only asked about a game from an hour before it starts until it's final:
+once a minute on our server, shared by every visitor. Otherwise nothing is fetched.
 """
 
 import os
@@ -15,13 +15,23 @@ import requests
 from .. import db
 from ..config import CAMPUS_TZ
 
-URL = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard"
+BASE = "https://site.api.espn.com/apis/site/v2/sports"
 USER_AGENT = "Grove/0.1 (Ole Miss student dashboard)"
-TEAM_ID = "145"            # Ole Miss on ESPN; override with SCORES_TEAM_ID
+TEAM_ID = "145"            # Ole Miss on ESPN (same id in every sport); override with SCORES_TEAM_ID
 TEAM_NAME = "Ole Miss"     # fallback match if the id ever changes
 CHECK_BEFORE = timedelta(hours=1)
-GIVE_UP_AFTER = timedelta(hours=6)    # stop checking a game this long after kickoff
-KEEP_FINAL = timedelta(hours=36)      # show "Final: W 31-24" this long after kickoff
+KEEP_FINAL = timedelta(hours=36)
+
+# Schedule label (from GAMEDAY_CALENDARS) -> ESPN scoreboard path, its "groups" filter
+# (all FBS / Division I games, not just the featured ones) and how long to keep checking.
+SPORTS = {
+    "football": ("football/college-football", "80", timedelta(hours=6)),
+    "basketball": ("basketball/mens-college-basketball", "50", timedelta(hours=4)),
+    "mbb": ("basketball/mens-college-basketball", "50", timedelta(hours=4)),
+    "womens-basketball": ("basketball/womens-college-basketball", "50", timedelta(hours=4)),
+    "wbb": ("basketball/womens-college-basketball", "50", timedelta(hours=4)),
+    "baseball": ("baseball/college-baseball", None, timedelta(hours=6)),
+}
 
 
 def team_id() -> str:
@@ -42,8 +52,17 @@ def _is_us(team: dict) -> bool:
         f'{team.get("location", "")} {team.get("displayName", "")}'.lower())
 
 
-def parse(raw: dict) -> dict | None:
-    """Our game from a scoreboard response, or None if Ole Miss isn't playing in it."""
+def _when(iso: str | None) -> datetime | None:
+    try:
+        return datetime.fromisoformat(iso.replace("Z", "+00:00"))
+    except (AttributeError, ValueError):
+        return None
+
+
+def parse(raw: dict, sport: str = "football", near: datetime | None = None) -> dict | None:
+    """Our game from a scoreboard response, or None if Ole Miss isn't in it.
+    With `near`, picks the game starting closest to it (baseball doubleheaders)."""
+    found = []
     for event in raw.get("events") or []:
         comp = (event.get("competitions") or [{}])[0]
         teams = comp.get("competitors") or []
@@ -59,7 +78,8 @@ def parse(raw: dict) -> dict | None:
             won = ours > theirs if ours != theirs else None
         broadcasts = [n for b in comp.get("broadcasts") or [] for n in b.get("names") or []]
         them_team = them.get("team") or {}
-        return {
+        found.append({
+            "sport": sport,
             "id": str(event.get("id")),
             "start": event.get("date"),
             "state": state if state in ("pre", "in", "post") else "pre",
@@ -71,41 +91,71 @@ def parse(raw: dict) -> dict | None:
             "opponent_abbr": them_team.get("abbreviation"),
             "won": won,
             "tv": broadcasts[0] if broadcasts else None,
-        }
-    return None
+        })
+    if not found:
+        return None
+    if near is not None:
+        found.sort(key=lambda g: abs((_when(g["start"]) or near) - near))
+    return found[0]
 
 
-def _football_games(conn: db.DB) -> list[dict]:
+def _scheduled(conn: db.DB) -> list[dict]:
     row = db.load(conn, "gameday")
     games = (row and row["data"] or {}).get("games") or []
-    return [g for g in games if g.get("sport") == "football" and not g.get("all_day")]
+    return [g for g in games if g.get("sport") in SPORTS and not g.get("all_day")]
+
+
+def stored_games(data: dict | None) -> dict:
+    """{sport: game}. Also reads the older single-game format ({"game": ...})."""
+    data = data or {}
+    if "games" in data:
+        return dict(data["games"])
+    return {data["game"]["sport"] if "sport" in data["game"] else "football": data["game"]} if data.get("game") else {}
 
 
 def fetch(conn: db.DB, now: datetime | None = None) -> dict | None:
-    """Returns the latest game, or None when there's nothing to do (no request is made then)."""
+    """Updates the games on now; returns None when there's nothing to do (no request is made then)."""
     now = now or datetime.now(timezone.utc)
     previous = db.load(conn, "scores")
-    last = (previous and previous["data"] or {}).get("game")
+    games = stored_games(previous and previous["data"])
 
-    live_window = [g for g in _football_games(conn)
-                   if datetime.fromisoformat(g["start"]) - CHECK_BEFORE <= now
-                   <= datetime.fromisoformat(g["start"]) + GIVE_UP_AFTER]
-    if not live_window:
+    to_check = []
+    for g in _scheduled(conn):
+        start = datetime.fromisoformat(g["start"])
+        path, groups, give_up = SPORTS[g["sport"]]
+        if not (start - CHECK_BEFORE <= now <= start + give_up):
+            continue
+        last = games.get(g["sport"])
+        last_start = _when(last and last.get("start"))
+        if last and last["state"] == "post" and last_start and abs(last_start - start) < timedelta(hours=2):
+            continue  # this game is already final
+        to_check.append((g, start, path, groups))
+    if not to_check:
         return None
-    game = live_window[0]
-    if last and last.get("state") == "post" and last.get("start") and \
-            abs(datetime.fromisoformat(last["start"].replace("Z", "+00:00")) -
-                datetime.fromisoformat(game["start"])) < timedelta(hours=3):
-        return None  # already final; nothing more to check
 
-    day = datetime.fromisoformat(game["start"]).astimezone(CAMPUS_TZ).strftime("%Y%m%d")
-    r = requests.get(URL, params={"dates": day, "groups": "80", "limit": "300"},
-                     headers={"User-Agent": USER_AGENT}, timeout=15)
-    r.raise_for_status()
-    found = parse(r.json())
-    if found is None:
-        raise RuntimeError(f"Ole Miss game not found on ESPN's scoreboard for {day}")
-    return {"game": found}
+    errors = []
+    for g, start, path, groups in to_check:
+        day = start.astimezone(CAMPUS_TZ).strftime("%Y%m%d")
+        params = {"dates": day, "limit": "300"}
+        if groups:
+            params["groups"] = groups
+        try:
+            r = requests.get(f"{BASE}/{path}/scoreboard", params=params,
+                             headers={"User-Agent": USER_AGENT}, timeout=15)
+            r.raise_for_status()
+            found = parse(r.json(), g["sport"], near=start)
+        except Exception as e:  # one sport's feed failing shouldn't stop the others
+            errors.append(f"{g['sport']}: {e}")
+            continue
+        if found is None:
+            errors.append(f"{g['sport']}: Ole Miss game not found on ESPN's scoreboard for {day}")
+            continue
+        games[g["sport"]] = found
+    if errors and len(errors) == len(to_check):
+        raise RuntimeError("; ".join(errors))
+    # Forget games old enough that nobody shows them any more.
+    games = {s: x for s, x in games.items() if (_when(x.get("start")) or now) > now - KEEP_FINAL}
+    return {"games": games}
 
 
 fetch.needs_db = True

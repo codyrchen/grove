@@ -169,16 +169,22 @@ def _game_start(g: dict) -> datetime:
 SCORE_SHOWN_FOR = timedelta(hours=36)
 
 
-def current_score(conn: db.DB, now: datetime) -> dict | None:
-    """The live or just-finished football game from ESPN, if it's recent enough to show."""
+def current_scores(conn: db.DB, now: datetime) -> list[dict]:
+    """Live and just-finished games from ESPN that are recent enough to show: live ones first,
+    then finals, newest first."""
+    from .pipelines.scores import stored_games
     row = db.load(conn, "scores")
-    game = (row and row["data"] or {}).get("game")
-    if not game or not game.get("start"):
-        return None
-    start = datetime.fromisoformat(game["start"].replace("Z", "+00:00"))
-    if not (start - timedelta(hours=1) <= now <= start + SCORE_SHOWN_FOR):
-        return None
-    return game
+    shown = []
+    for game in stored_games(row and row["data"]).values():
+        try:
+            start = datetime.fromisoformat(game["start"].replace("Z", "+00:00"))
+        except (AttributeError, KeyError, ValueError):
+            continue
+        if start - timedelta(hours=1) <= now <= start + SCORE_SHOWN_FOR and game.get("state") != "pre":
+            shown.append(game)
+    shown.sort(key=lambda g: g["start"], reverse=True)   # newest first...
+    shown.sort(key=lambda g: g["state"] != "in")         # ...with live games on top
+    return shown
 
 
 def kickoff_forecast(conn: db.DB, game: dict) -> dict | None:
@@ -220,7 +226,7 @@ def gameday(conn: db.DB, now: datetime | None = None, directory: Path | None = N
         "tips": [{"title": t["title"], "text": t.get("text"), "url": _web_url(t.get("url"))}
                  for t in info.get("tips", []) if isinstance(t, dict) and t.get("title")],
         "notes": (info.get("notes") or {}).get(upcoming[0]["local_date"]) if upcoming else None,
-        "score": current_score(conn, now),
+        "scores": current_scores(conn, now),
         "today": next((g for g in football if g["local_date"] == today.isoformat()), None),
         "this_week": next((g for g in football
                            if 0 < (date.fromisoformat(g["local_date"]) - today).days <= 6), None),

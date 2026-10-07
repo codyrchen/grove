@@ -135,14 +135,23 @@
   }
 
   // "Ole Miss 24 – 17 LSU" with LIVE / FINAL, from ESPN's scoreboard.
+  var SPORT_NAMES = { football: "", basketball: "Basketball", mbb: "Basketball",
+                      "womens-basketball": "Women's basketball", wbb: "Women's basketball", baseball: "Baseball" };
+  var BANNER_SPORTS = ["football", "basketball", "mbb", "womens-basketball", "wbb"];
+
+  function sportName(sport) {
+    return sport in SPORT_NAMES ? SPORT_NAMES[sport] : sport.charAt(0).toUpperCase() + sport.slice(1);
+  }
+
   function scoreLine(sc) {
     return "Ole Miss " + sc.us + " – " + sc.them + " " + sc.opponent;
   }
 
   function scoreboard(sc) {
     var box = el("div", "game-score " + (sc.state === "in" ? "is-live" : sc.won ? "is-win" : sc.won === false ? "is-loss" : ""));
-    if (sc.state === "in") box.appendChild(el("div", "game-badge live", "LIVE · " + sc.detail));
-    else box.appendChild(el("div", "game-label", sc.detail || "Final"));
+    var name = sportName(sc.sport || "football");
+    if (sc.state === "in") box.appendChild(el("div", "game-badge live", (name ? name + " · " : "") + "LIVE · " + sc.detail));
+    else box.appendChild(el("div", "game-label", (name ? name + " · " : "") + (sc.detail || "Final")));
     var line = el("div", "game-score-line");
     line.appendChild(el("span", "game-score-team", "Ole Miss"));
     line.appendChild(el("span", "game-score-num", sc.us + " – " + sc.them));
@@ -161,11 +170,16 @@
   function drawGameday() {
     var pill = document.getElementById("gameday-pill");
     var d = latest.gameday && latest.gameday.data;
-    var today = d && d.today, week = d && d.this_week, sc = d && d.score;
-    document.body.classList.toggle("gameday", !!today || !!(sc && sc.state === "in"));
+    var today = d && d.today, week = d && d.this_week;
+    var boards = (d && d.scores) || [];
+    // The banner shows a live football or basketball game, else a football win.
+    var sc = boards.filter(function (g) { return g.state === "in" && BANNER_SPORTS.indexOf(g.sport || "football") >= 0; })[0] ||
+             boards.filter(function (g) { return g.state === "post" && g.won && (g.sport || "football") === "football"; })[0];
+    document.body.classList.toggle("gameday", !!today || !!(sc && sc.state === "in" && (sc.sport || "football") === "football"));
     pill.classList.remove("live", "win");
     if (sc && sc.state === "in") {
-      pill.textContent = "LIVE: " + scoreLine(sc) + " · " + sc.detail;
+      var label = sportName(sc.sport || "football");
+      pill.textContent = "LIVE" + (label ? " " + label.toLowerCase() : "") + ": " + scoreLine(sc) + " · " + sc.detail;
       pill.classList.add("live");
     } else if (sc && sc.state === "post" && sc.won) {
       pill.textContent = "Rebels win! " + scoreLine(sc);
@@ -184,7 +198,7 @@
   // Check every minute while a game is on (or about to start), every 10 minutes otherwise.
   function nextRefreshMs() {
     var d = latest.gameday && latest.gameday.data;
-    if (d && d.score && d.score.state === "in") return 60 * 1000;
+    if (d && (d.scores || []).some(function (g) { return g.state === "in"; })) return 60 * 1000;
     var t = d && d.today;
     if (t && !t.all_day) {
       var mins = (new Date(t.start).getTime() - Date.now()) / 60000;
@@ -391,13 +405,15 @@
     },
 
     gameday: function (d, body) {
-      var sc = d.score && d.score.state !== "pre" ? d.score : null;
+      var boards = (d.scores || []).slice(0, 2);
       var upcoming = d.upcoming;
-      if (sc) {
-        body.appendChild(scoreboard(sc));
-        // The game on the scoreboard is still in the schedule while it's on; don't show it twice.
+      if (boards.length) {
+        boards.forEach(function (sc) { body.appendChild(scoreboard(sc)); });
+        // Games on a scoreboard are still in the schedule while they're on; don't show them twice.
         upcoming = upcoming.filter(function (g) {
-          return !(g.sport === "football" && Math.abs(new Date(g.start) - new Date(sc.start)) < 6 * 3600000);
+          return !boards.some(function (sc) {
+            return g.sport === sc.sport && Math.abs(new Date(g.start) - new Date(sc.start)) < 6 * 3600000;
+          });
         });
         if (!upcoming.length) return;
       }

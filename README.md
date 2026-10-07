@@ -38,13 +38,14 @@ The refresher reads them every 3 hours, so time changes (like "TBA" becoming a k
 
 Within 5 days of a home kickoff, the card shows the **kickoff forecast** ("Kickoff: 72° · Partly cloudy · 20% rain") from the hourly Oxford forecast. During home football game week, it also lists the links in `grove/data/gameday_info.json`, such as parking and shuttles or the clear bag policy (see below).
 
-**Live scores** come from ESPN's public college football scoreboard feed. It needs no key, but it's unofficial and could change without notice, so it fails soft: if it breaks, the card simply shows the schedule.
-- **During a game:** the card shows "LIVE · 3rd 4:12 · Ole Miss 24 – 17 LSU", the banner under the greeting shows the live score, and open pages refresh every minute.
-- **After a game:** "Final · W 31–24 vs. LSU" stays up for 36 hours, and a win gets a red "Rebels win!" banner.
-- **How often ESPN is checked:** only from an hour before a football kickoff (from the Game Day schedule) until the game is final, once a minute on the server, shared by every visitor. Nothing is fetched the rest of the week.
+**Live scores** for football, men's and women's basketball, and baseball come from ESPN's public college scoreboard feeds. It needs no key, but it's unofficial and could change without notice, so it fails soft: if it breaks, the card simply shows the schedule.
+- **During a game:** the card shows a live scoreboard ("Basketball · LIVE · 2nd 10:21 · Ole Miss 52 – 48 Kentucky"), and open pages refresh every minute. Live football and basketball games also show in the banner under the greeting; baseball stays on the card, since there are games most days in the spring.
+- **After a game:** the final ("W 31–24 vs. LSU") stays on the card for 36 hours. A football win gets a red "Rebels win!" banner.
+- **How often ESPN is checked:** only from an hour before each game on the schedule until it's final, once a minute on the server, shared by every visitor. Nothing is fetched otherwise. In a baseball doubleheader, Grove follows the game closest to the scheduled time.
+- **Which sports:** scores follow the sport names you use in `GAMEDAY_CALENDARS`: `football`, `basketball` (or `mbb`) for men's basketball, `womens-basketball` (or `wbb`), and `baseball`. Other sports still show on the schedule, just without live scores.
 - **Team:** Grove looks for ESPN team id `145` (Ole Miss), or any team whose name contains "Ole Miss". Set `SCORES_TEAM_ID` if the id is ever different.
 
-Live scores need the football schedule (`GAMEDAY_CALENDARS`) to know when games are.
+Live scores need each sport's schedule in `GAMEDAY_CALENDARS` to know when games are.
 
 ## Tonight in Oxford
 
