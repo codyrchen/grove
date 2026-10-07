@@ -1,34 +1,77 @@
 {% extends "base.html" %}
-{% block nav_actions %}
-  <button class="btn btn-sm btn-outline-light d-none" id="arrange-done" type="button">
-    <i class="bi bi-check-lg"></i> Done</button>
-  <button class="btn btn-sm btn-link nav-link" id="arrange-btn" type="button" title="Arrange widgets">
-    <i class="bi bi-arrows-move"></i><span class="d-none d-sm-inline ms-1">Arrange</span></button>
-  <button class="btn btn-sm btn-link nav-link" type="button" title="Settings"
-          data-bs-toggle="modal" data-bs-target="#settings">
-    <i class="bi bi-gear"></i><span class="d-none d-sm-inline ms-1">Settings</span></button>
+{% block body_class %}home{% if photo %} has-photo{% endif %}{% endblock %}
+{% block body_attrs %}{% if photo %}style="--photo: url('{{ photo.url }}')"{% endif %}{% endblock %}
+
+{% block nav %}
+<div class="home-bar">
+  <a class="home-brand" href="{{ url_for('about') }}" title="About {{ SITE_NAME }}">
+    <span class="brand-mark"><i class="bi bi-tree-fill"></i></span><span>{{ SITE_NAME }}</span>
+  </a>
+  <div class="home-actions">
+    <button class="glass-btn d-none" id="arrange-done" type="button"><i class="bi bi-check-lg"></i> Done</button>
+    <button class="glass-btn icon-only" id="arrange-btn" type="button" title="Arrange widgets" aria-label="Arrange widgets">
+      <i class="bi bi-arrows-move"></i></button>
+    <button class="glass-btn icon-only" type="button" title="Settings" aria-label="Settings"
+            data-bs-toggle="modal" data-bs-target="#settings"><i class="bi bi-gear"></i></button>
+    <button class="study-btn" id="study-btn" type="button">study mode</button>
+  </div>
+</div>
 {% endblock %}
 
 {% block body %}
-<main class="container-fluid px-3 px-lg-4 py-4 grove-main">
-  <header class="mb-4" id="greeting">
-    <h1 class="h3 fw-bold mb-1" id="greeting-hello">Hey, Rebel</h1>
-    <div class="text-muted" id="greeting-sub"></div>
+<main class="home-main">
+  <header class="hero" id="hero">
+    <h1 class="hero-hello">
+      <span id="greeting-hello">{{ greeting.hello }}</span>,
+      <button class="hero-name" id="hero-name" type="button" title="Click to change your name">Rebel</button>
+    </h1>
+    <div class="hero-date" id="greeting-date">{{ greeting.date }}</div>
+    <div class="hero-pill {% if not greeting.semester_week %}d-none{% endif %}" id="greeting-week">
+      {% if greeting.semester_week %}Week {{ greeting.semester_week }} of the semester{% endif %}
+    </div>
   </header>
-  <div class="arrange-hint alert alert-light border d-none" id="arrange-hint">
-    Drag widgets by their header to move them. Click <strong>Done</strong> when you're finished.
+
+  <section class="study d-none" id="study" aria-label="Study mode">
+    <div class="study-clock" id="study-clock"></div>
+    <div class="study-timer glass">
+      <div class="study-modes" role="group" aria-label="Timer length">
+        <button type="button" class="active" data-minutes="25">Focus 25</button>
+        <button type="button" data-minutes="50">Focus 50</button>
+        <button type="button" data-minutes="5">Break 5</button>
+      </div>
+      <div class="study-time" id="study-time">25:00</div>
+      <div class="d-flex gap-2 justify-content-center">
+        <button type="button" class="study-go" id="study-go">Start</button>
+        <button type="button" class="glass-btn" id="study-reset">Reset</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="arrange-hint glass d-none" id="arrange-hint">
+    Drag widgets by their title to move them. Click <strong>Done</strong> when you're finished.
   </div>
   <div class="grove-grid" id="grid" aria-live="polite"></div>
 </main>
+
+<div class="photo-credit glass {% if not photo %}d-none{% endif %}" id="photo-credit">
+  {% if photo %}
+    <i class="bi bi-geo-alt-fill"></i>
+    {{ photo.place or "Ole Miss" }}{% if photo.credit %} · Photo by
+      {% if photo.credit_url %}<a href="{{ photo.credit_url }}" target="_blank" rel="noopener">{{ photo.credit }}</a>
+      {% else %}{{ photo.credit }}{% endif %}{% endif %}
+  {% endif %}
+</div>
 
 <div class="modal fade" id="settings" tabindex="-1" aria-labelledby="settings-title" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h2 class="modal-title h5" id="settings-title">Settings</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+        <label class="h6 fw-semibold d-block" for="name-input">Your name</label>
+        <input class="form-control mb-4" id="name-input" maxlength="40" placeholder="Rebel" autocomplete="given-name">
         <h3 class="h6 fw-semibold">Widgets</h3>
         <div id="widget-toggles" class="mb-4">
           {% for id, title in widgets.items() %}
@@ -41,9 +84,9 @@
         <h3 class="h6 fw-semibold">Columns</h3>
         <div class="btn-group mb-2" role="group" aria-label="Number of columns">
           <input type="radio" class="btn-check" name="columns" id="cols-2" value="2">
-          <label class="btn btn-outline-secondary" for="cols-2">2</label>
+          <label class="btn btn-outline-light" for="cols-2">2</label>
           <input type="radio" class="btn-check" name="columns" id="cols-3" value="3">
-          <label class="btn btn-outline-secondary" for="cols-3">3</label>
+          <label class="btn btn-outline-light" for="cols-3">3</label>
         </div>
         <div class="small text-muted">Phones always show one column.</div>
       </div>
@@ -54,6 +97,13 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block footer %}
+<footer class="home-footer">
+  <a href="{{ url_for('about') }}">{{ SITE_NAME }}</a> · made in Oxford for Ole Miss students and fans ·
+  not affiliated with the University of Mississippi
+</footer>
 {% endblock %}
 
 {% block scripts %}

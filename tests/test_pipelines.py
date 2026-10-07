@@ -19,6 +19,20 @@ def test_weather_parse():
                             "text": "Thunderstorms", "icon": "cloud-lightning-rain"}
 
 
+def test_weather_upcoming_hours():
+    w = weather.parse(json.loads((FIXTURES / "open_meteo.json").read_text()))
+    # Current time in the fixture is 08:00, so the row starts at 9 am, every 3 hours.
+    assert [(h["label"], h["temp"]) for h in w["hours"]] == [
+        ("9 am", 58), ("12 pm", 68), ("3 pm", 72), ("6 pm", 68), ("9 pm", 58)]
+    assert w["hours"][4]["icon"] == "cloud-moon"  # partly cloudy at night
+
+
+def test_weather_without_hourly_data():
+    raw = json.loads((FIXTURES / "open_meteo.json").read_text())
+    del raw["hourly"]
+    assert weather.parse(raw)["hours"] == []
+
+
 def test_weather_night_icon_and_unknown_code():
     assert weather.describe(0, is_day=False) == ("Clear", "moon-stars")
     assert weather.describe(2, is_day=False) == ("Partly cloudy", "cloud-moon")

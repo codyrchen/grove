@@ -100,12 +100,26 @@
       t.appendChild(el("div", null, d.text));
       now.appendChild(t);
       var more = el("div", "ms-auto text-end small text-muted");
+      var today = d.days[0];
+      if (today) more.appendChild(el("div", null, "H " + today.high + "°  ·  L " + today.low + "°"));
       more.appendChild(el("div", null, "Feels like " + d.feels_like + "°"));
-      more.appendChild(el("div", null, "Wind " + d.wind_mph + " mph"));
       if (d.sunset) more.appendChild(el("div", null, "Sunset " + d.sunset));
       now.appendChild(more);
       body.appendChild(now);
 
+      if (d.hours && d.hours.length) {
+        var hours = el("div", "wx-hours");
+        d.hours.forEach(function (h) {
+          var c = el("div");
+          c.title = h.text;
+          c.appendChild(el("div", null, h.label));
+          c.appendChild(icon(h.icon));
+          c.appendChild(el("div", null, h.temp + "°"));
+          hours.appendChild(c);
+        });
+        body.appendChild(hours);
+        return;
+      }
       var days = el("div", "wx-days");
       d.days.forEach(function (day, i) {
         var c = el("div");
@@ -145,7 +159,9 @@
       var g = el("div", "links-grid");
       d.links.forEach(function (l) {
         var a = link(l.url, null);
-        a.appendChild(icon(l.icon));
+        var i = icon(l.icon);
+        if (l.color) i.style.setProperty("--tile", l.color);
+        a.appendChild(i);
         a.appendChild(el("span", null, l.label));
         g.appendChild(a);
       });
@@ -161,7 +177,11 @@
 
     var head = el("div", "widget-head");
     head.appendChild(icon(ICONS[id] || "square"));
-    head.appendChild(el("span", null, WIDGETS[id]));
+    // "Campus News" -> "Campus <accent>News</accent>", like Today's "What's for Breakfast?"
+    var words = WIDGETS[id].split(" ");
+    var title = el("span", null, words.length > 1 ? words.slice(0, -1).join(" ") + " " : "");
+    title.appendChild(el("span", words.length > 1 ? "accent" : null, words[words.length - 1]));
+    head.appendChild(title);
     if (w.updated_ago) head.appendChild(el("span", "updated", w.updated_ago));
     node.appendChild(head);
 
@@ -192,11 +212,136 @@
   function drawGreeting() {
     var g = latest.greeting && latest.greeting.data;
     if (!g) return;
-    document.getElementById("greeting-hello").textContent = g.hello + ", Rebel";
-    var sub = g.date;
-    if (g.semester_week) sub += " · Week " + g.semester_week + " of the semester";
-    document.getElementById("greeting-sub").textContent = sub;
+    document.getElementById("greeting-hello").textContent = g.hello;
+    document.getElementById("greeting-date").textContent = g.date;
+    var week = document.getElementById("greeting-week");
+    week.textContent = g.semester_week ? "Week " + g.semester_week + " of the semester" : "";
+    week.classList.toggle("d-none", !g.semester_week);
   }
+
+  // ---------- your name (saved per browser) ----------
+
+  var NAME_KEY = "grove.name";
+  var nameBtn = document.getElementById("hero-name");
+  var nameInput = document.getElementById("name-input");
+
+  function getName() {
+    try { return localStorage.getItem(NAME_KEY) || ""; } catch (e) { return ""; }
+  }
+
+  function setName(name) {
+    name = (name || "").trim().slice(0, 40);
+    try {
+      if (name) localStorage.setItem(NAME_KEY, name); else localStorage.removeItem(NAME_KEY);
+    } catch (e) { /* ignore */ }
+    nameBtn.textContent = name || "Rebel";
+  }
+
+  nameBtn.addEventListener("click", function () {
+    var input = el("input", "hero-name-input");
+    input.value = getName();
+    input.placeholder = "your name";
+    input.maxLength = 40;
+    input.setAttribute("aria-label", "Your name");
+    nameBtn.replaceWith(input);
+    input.focus();
+    var done = false;
+    function finish(save) {
+      if (done) return;
+      done = true;
+      if (save) setName(input.value);
+      input.replaceWith(nameBtn);
+    }
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") finish(true);
+      if (e.key === "Escape") finish(false);
+    });
+    input.addEventListener("blur", function () { finish(true); });
+  });
+
+  nameInput.addEventListener("change", function () { setName(nameInput.value); });
+  setName(getName());
+
+  // ---------- study mode: big clock + focus timer ----------
+
+  var studyBtn = document.getElementById("study-btn");
+  var clock = document.getElementById("study-clock");
+  var timeEl = document.getElementById("study-time");
+  var goBtn = document.getElementById("study-go");
+  var timer = { minutes: 25, left: 25 * 60, endsAt: null, tick: null };
+
+  function mmss(sec) {
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
+
+  function drawClock() {
+    clock.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+
+  function drawTimer() {
+    timeEl.textContent = mmss(timer.left);
+    goBtn.textContent = timer.endsAt ? "Pause" : (timer.left < timer.minutes * 60 ? "Resume" : "Start");
+    document.title = timer.endsAt ? mmss(timer.left) + " · Grove" : "Grove";
+  }
+
+  function chime() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.25, 0.5].forEach(function (t) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = 880;
+        g.gain.setValueAtTime(0.15, ctx.currentTime + t);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.2);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.2);
+      });
+    } catch (e) { /* no audio */ }
+  }
+
+  function stopTimer() {
+    clearInterval(timer.tick);
+    timer.tick = null;
+    timer.endsAt = null;
+  }
+
+  function resetTimer(minutes) {
+    stopTimer();
+    if (minutes) timer.minutes = minutes;
+    timer.left = timer.minutes * 60;
+    drawTimer();
+  }
+
+  goBtn.addEventListener("click", function () {
+    if (timer.endsAt) { stopTimer(); drawTimer(); return; }
+    timer.endsAt = Date.now() + timer.left * 1000;
+    timer.tick = setInterval(function () {
+      timer.left = Math.max(0, Math.round((timer.endsAt - Date.now()) / 1000));
+      if (timer.left === 0) { stopTimer(); chime(); document.title = "Time's up · Grove"; resetTimer(); return; }
+      drawTimer();
+    }, 250);
+    drawTimer();
+  });
+
+  document.getElementById("study-reset").addEventListener("click", function () { resetTimer(); });
+
+  document.querySelectorAll(".study-modes button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll(".study-modes button").forEach(function (x) { x.classList.remove("active"); });
+      b.classList.add("active");
+      resetTimer(Number(b.dataset.minutes));
+    });
+  });
+
+  studyBtn.addEventListener("click", function () {
+    var on = !document.body.classList.contains("studying");
+    if (on && arranging) setArranging(false);
+    document.body.classList.toggle("studying", on);
+    studyBtn.textContent = on ? "exit study mode" : "study mode";
+  });
+
+  drawClock();
+  setInterval(drawClock, 1000);
 
   function refresh() {
     fetch("/api/widgets", { headers: { Accept: "application/json" } })
@@ -312,7 +457,10 @@
     draw();
   });
 
-  document.getElementById("settings").addEventListener("show.bs.modal", syncSettings);
+  document.getElementById("settings").addEventListener("show.bs.modal", function () {
+    syncSettings();
+    nameInput.value = getName();
+  });
 
   // ---------- start ----------
 

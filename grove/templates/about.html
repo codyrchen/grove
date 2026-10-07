@@ -3,11 +3,24 @@
 {% block body %}
 <main class="container py-5" style="max-width: 720px">
   <h1 class="h3 fw-bold mb-3">About {{ SITE_NAME }}</h1>
-  <p>{{ SITE_NAME }} puts your Ole Miss day on one page: weather in Oxford, campus news and the
-     links you use every day. More is coming: deadlines, dining, Rebels games, events and a
-     chat you can ask about anything on campus.</p>
-  <p>Use <strong>Settings</strong> to choose widgets and columns, and <strong>Arrange</strong> to
-     drag them around. Your layout is saved in this browser.</p>
+  <p>{{ SITE_NAME }} puts your Ole Miss day on one page: a campus photo of the day, Oxford weather,
+     campus news and the links you use every day. More is coming: deadlines, dining, Rebels games,
+     events and a chat you can ask about anything on campus.</p>
+  <ul>
+    <li>Click your name in the greeting to change it.</li>
+    <li><strong>Settings</strong> lets you choose widgets and columns. <strong>Arrange</strong> lets you drag them around.</li>
+    <li><strong>Study mode</strong> hides everything except a big clock and a focus timer.</li>
+  </ul>
+  <p>Your name and layout are saved only in this browser.</p>
+
+  <h2 class="h5 fw-semibold mt-4">Share your campus photo</h2>
+  <p>Every day's background is a photo of Ole Miss or Oxford taken by a student or fan, with their
+     name on it. The Grove in the fall, the Lyceum at night, the Square, game day: send us your best shot.
+     Only send photos you took yourself.</p>
+  {% if PHOTO_SUBMIT_URL %}
+    <p><a class="btn btn-grove" href="{{ PHOTO_SUBMIT_URL }}" target="_blank" rel="noopener">Submit a photo</a></p>
+  {% endif %}
+
   <h2 class="h5 fw-semibold mt-4">Where the data comes from</h2>
   <ul>
     <li>Weather: <a href="https://open-meteo.com" rel="noopener">Open-Meteo</a></li>

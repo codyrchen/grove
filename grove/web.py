@@ -4,6 +4,8 @@ Run locally:
     python -m flask --app grove.web run --debug
 """
 
+import os
+
 from flask import Flask, abort, g, jsonify, render_template
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -19,7 +21,8 @@ def create_app(database: str | None = None) -> Flask:
     # Railway (and most hosts) sit behind a proxy that terminates HTTPS.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     app.config["DATABASE"] = database or database_url()
-    app.jinja_env.globals.update(SITE_NAME=SITE_NAME)
+    app.jinja_env.globals.update(SITE_NAME=SITE_NAME,
+                                 PHOTO_SUBMIT_URL=os.environ.get("PHOTO_SUBMIT_URL"))
 
     def get_db() -> db.DB:
         if "db" not in g:
@@ -34,7 +37,8 @@ def create_app(database: str | None = None) -> Flask:
 
     @app.get("/")
     def dashboard():
-        return render_template("dashboard.html", widgets=widgets.WIDGETS)
+        return render_template("dashboard.html", widgets=widgets.WIDGETS,
+                               greeting=widgets.greeting(), photo=widgets.photo_of_the_day())
 
     @app.get("/about")
     def about():
@@ -43,12 +47,12 @@ def create_app(database: str | None = None) -> Flask:
     @app.get("/api/widgets")
     def api_widgets():
         conn = get_db()
-        names = ["greeting", *widgets.WIDGETS]
+        names = ["greeting", "photo", *widgets.WIDGETS]
         return jsonify({n: widgets.build(conn, n) for n in names})
 
     @app.get("/api/widgets/<name>")
     def api_widget(name):
-        if name != "greeting" and name not in widgets.WIDGETS:
+        if name not in ("greeting", "photo") and name not in widgets.WIDGETS:
             abort(404)
         return jsonify(widgets.build(get_db(), name))
 

@@ -11,6 +11,7 @@ PARAMS = {
     "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day",
     "daily": "weather_code,temperature_2m_max,temperature_2m_min,"
              "precipitation_probability_max,sunrise,sunset",
+    "hourly": "temperature_2m,weather_code,is_day",
     "temperature_unit": "fahrenheit",
     "wind_speed_unit": "mph",
     "timezone": "America/Chicago",
@@ -48,6 +49,31 @@ def clock(iso: str) -> str:
     return f"{hour % 12 or 12}:{minute} {'AM' if hour < 12 else 'PM'}"
 
 
+def hour_label(iso: str) -> str:
+    """'2026-10-07T13:00' -> '1 pm'"""
+    hour = int(iso[11:13])
+    return f"{hour % 12 or 12} {'am' if hour < 12 else 'pm'}"
+
+
+def upcoming_hours(raw: dict, count: int = 5, step: int = 3) -> list[dict]:
+    """The next few hours after now, every `step` hours (like 4 pm, 7 pm, 10 pm...)."""
+    hourly = raw.get("hourly")
+    if not hourly:
+        return []
+    now = raw["current"]["time"][:13]  # "2026-10-07T08"; times share the local timezone
+    start = next((i for i, t in enumerate(hourly["time"]) if t[:13] > now), None)
+    if start is None:
+        return []
+    out = []
+    for i in range(start, len(hourly["time"]), step):
+        text, icon = describe(hourly["weather_code"][i], bool(hourly["is_day"][i]))
+        out.append({"label": hour_label(hourly["time"][i]),
+                    "temp": round(hourly["temperature_2m"][i]), "text": text, "icon": icon})
+        if len(out) == count:
+            break
+    return out
+
+
 def parse(raw: dict) -> dict:
     cur, daily = raw["current"], raw["daily"]
     text, icon = describe(cur["weather_code"], bool(cur.get("is_day", 1)))
@@ -69,6 +95,7 @@ def parse(raw: dict) -> dict:
         "text": text,
         "icon": icon,
         "sunset": clock(daily["sunset"][0]) if daily.get("sunset") else None,
+        "hours": upcoming_hours(raw),
         "days": days,
     }
 

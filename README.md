@@ -1,8 +1,11 @@
 # Grove
 
-Grove is a daily dashboard for Ole Miss students: Oxford weather, campus news and quick links on one page, with deadlines, dining, Rebels games, events and an "Ask the Grove" chat coming next. It's inspired by Princeton's [Today](https://github.com/TigerAppsOrg/Today).
+Grove is a daily home page for Ole Miss students and fans. It shows a campus photo of the day, a big greeting with your name, Oxford weather by the hour, campus news and quick links. Deadlines, dining, Rebels games, events and an "Ask the Grove" chat are coming next. It's inspired by Princeton's [Today](https://github.com/TigerAppsOrg/Today).
 
-Students can turn widgets on and off, pick 2 or 3 columns, and drag widgets around. The layout is saved in their browser. Phones always show one column.
+- Click the name in the greeting to change it.
+- **Settings** turns widgets on and off and switches between 2 and 3 columns. **Arrange** lets you drag widgets around. Phones always show one column.
+- **Study mode** hides everything except a big clock and a focus timer (25 min, 50 min or a 5 min break).
+- The name and layout are saved only in the visitor's browser.
 
 ## How it works
 
@@ -23,6 +26,23 @@ python -m flask --app grove.web run --debug     # http://127.0.0.1:5000
 
 Without `DATABASE_URL`, data goes into a local SQLite file, `grove.db`. Copy `.env.example` to `.env` to set the semester dates (for "Week N of the semester") or the news feeds.
 
+## Campus photos
+
+The background is a **photo of the day**. Everyone sees the same photo, and it changes at midnight in Oxford. Until any photos are added, the page uses a navy and cardinal gradient.
+
+To add photos:
+1. Put the image in `grove/static/photos/`. Use a landscape JPG about 2400px wide and under about 600 KB.
+2. List it in `grove/static/photos/photos.json`:
+   ```json
+   [
+     {"file": "grove-fall.jpg", "place": "The Grove", "credit": "Cody Chen"},
+     {"file": "lyceum-night.jpg", "place": "The Lyceum", "credit": "Jane Doe", "credit_url": "https://instagram.com/..."}
+   ]
+   ```
+   `place` and the credit show in the corner of the page.
+
+**Only use photos you took or have written permission to use.** Most photos online, including the university's own, are copyrighted. Also avoid photos where the university's logos are the main subject. To collect photos from the community, make a form (for example a Google Form with a file upload and a "this is my photo" checkbox) and set `PHOTO_SUBMIT_URL` to its link. The About page then shows a **Submit a photo** button.
+
 ## Tests
 
 ```bash
@@ -40,6 +60,7 @@ To also run the database tests against Postgres, set `TEST_DATABASE_URL` (for ex
    DATABASE_URL=${{Postgres.DATABASE_URL}}
    SEMESTER_START=2026-08-24
    SEMESTER_END=2026-12-11
+   PHOTO_SUBMIT_URL=https://forms.gle/...   # optional
    ```
    Check the dates against the registrar's academic calendar.
 4. `railway.json` runs `start.sh`, which starts the refresher in the background and the website with gunicorn. Railway health-checks `/healthz`.
