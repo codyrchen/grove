@@ -76,6 +76,29 @@ After a few minutes, the deploy logs should show `weather: updated` and `news: u
 
 If a widget stays on "Loading for the first time", look for a `! news failed:` line in the logs. The news feed URL is a guess until it's checked live; change it with `NEWS_FEEDS` (space-separated RSS or Atom URLs) without redeploying code.
 
+## Chrome extension (new tab)
+
+`extension/` is a small Chrome extension that makes Grove your new tab page. It shows the live site full-screen, so updates to the site reach everyone without a new extension release. It asks for no permissions. If the site can't be reached, the tab shows a clock and a "Try again" link instead of an error.
+
+**Try it locally**
+1. Run the site (`python -m flask --app grove.web run`). `extension/config.js` points at `http://127.0.0.1:5000` by default.
+2. In Chrome, open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and pick the `extension` folder.
+3. Open a new tab. Chrome asks once whether to keep the new tab change; choose **Keep it**.
+
+**Publish it on the Chrome Web Store**
+1. Deploy the site first. Then set `GROVE_URL` in `extension/config.js` to the live address, such as `https://grove.up.railway.app`.
+2. Run `sh extension/build.sh`. It refuses to build while `config.js` still points at your own computer, and writes `grove-extension-<version>.zip`.
+3. Register at the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole) (one-time $5 fee), click **New item**, and upload the zip.
+4. Fill in the listing:
+   - **Description:** "Your Ole Miss day on every new tab…"
+   - **Category:** Productivity
+   - **Screenshots:** at least one, 1280×800
+   - **Privacy policy:** `https://<your site>/privacy`
+   - **Data use:** check that it collects no user data.
+5. Submit for review. It usually takes a few days.
+
+For later releases, bump `version` in `manifest.json`, rebuild, and upload. You only need a new release when the extension itself changes, not the site.
+
 ## Adding a widget
 
 1. Write `grove/pipelines/<name>.py` with a `fetch()` that returns JSON-friendly data. Keep the parsing in a separate `parse()` and test it against a saved sample in `tests/fixtures/`.
@@ -88,4 +111,4 @@ If a widget stays on "Loading for the first time", look for a `! news failed:` l
 1. ~~Dashboard, weather, news, quick links~~
 2. Deadlines countdown, dining, Rebels athletics, events with a free-food tag, a RebelSnatch widget
 3. "Ask the Grove" chat (OpenAI, with answers that cite their sources)
-4. Chrome new-tab extension, home-screen app, building hours, buses
+4. ~~Chrome new-tab extension~~; home-screen app, building hours, buses

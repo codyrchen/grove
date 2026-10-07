@@ -44,6 +44,10 @@ def create_app(database: str | None = None) -> Flask:
     def about():
         return render_template("about.html")
 
+    @app.get("/privacy")
+    def privacy():
+        return render_template("privacy.html")
+
     @app.get("/api/widgets")
     def api_widgets():
         conn = get_db()

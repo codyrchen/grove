@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Privacy · {{ SITE_NAME }}{% endblock %}
+{% block body %}
+<main class="container py-5" style="max-width: 720px">
+  <h1 class="h3 fw-bold mb-3">Privacy</h1>
+  <p>{{ SITE_NAME }} and the {{ SITE_NAME }} Chrome extension don't ask for an account and don't collect personal information.</p>
+  <ul>
+    <li><strong>Your name, layout and widget choices</strong> are saved in your browser's local storage. That data never leaves your browser, and clearing your browser data removes it.</li>
+    <li><strong>Weather, news and other widget data</strong> is fetched by our server from public sources. Your browser only talks to {{ SITE_NAME }}.</li>
+    <li><strong>The Chrome extension</strong> only replaces your new tab page with {{ SITE_NAME }}. It asks for no permissions and can't read your browsing history or other tabs.</li>
+    <li>Our host keeps standard server logs (such as IP address and pages requested) for a short time to keep the site running. We don't sell or share them, and we don't use ads or tracking cookies.</li>
+  </ul>
+  <p>If you submit a campus photo, we use your name only to credit the photo.</p>
+  <p class="text-muted small">Questions? Open an issue on the project's GitHub page.</p>
+</main>
+{% endblock %}

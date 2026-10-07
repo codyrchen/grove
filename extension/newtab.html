@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>New Tab</title>
+  <link rel="stylesheet" href="newtab.css">
+</head>
+<body>
+  <!-- The live Grove site fills the tab. Until it loads (or if you're offline),
+       the same navy-to-cardinal sky and a clock show, so a new tab never flashes white. -->
+  <div class="fallback" id="fallback">
+    <div class="clock" id="clock"></div>
+    <div class="note" id="note"></div>
+  </div>
+  <iframe id="grove" title="Grove" hidden></iframe>
+  <script src="config.js"></script>
+  <script src="newtab.js"></script>
+</body>
+</html>

@@ -22,6 +22,7 @@ def test_dashboard_page(client):
 def test_healthz_and_about(client):
     assert client.get("/healthz").data == b"ok"
     assert client.get("/about").status_code == 200
+    assert b"never leaves your browser" in client.get("/privacy").data
 
 
 def test_widgets_before_any_data(client):
