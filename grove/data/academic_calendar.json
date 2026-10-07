@@ -1,1 +1,5 @@
-[]
+[
+  {"name": "Thanksgiving break", "date": "2026-11-21"},
+  {"name": "Classes resume after Thanksgiving", "date": "2026-11-30"},
+  {"name": "Final exams begin", "date": "2026-12-07"}
+]

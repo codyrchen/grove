@@ -1,6 +1,6 @@
-"""Rebels schedules from calendar (.ics) feeds, like the "Download schedule" links on athletics sites.
-
-GAMEDAY_CALENDARS lists the feeds as space-separated sport=url pairs:
+"""Rebels schedules: from ESPN's team schedule feeds by default, or from calendar (.ics) feeds
+like the "Add to calendar" links on athletics sites, if GAMEDAY_CALENDARS lists them as
+space-separated sport=url pairs:
     GAMEDAY_CALENDARS="football=https://.../football.ics baseball=https://.../baseball.ics"
 """
 
@@ -11,6 +11,8 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from .. import ics
+from ..config import CAMPUS_TZ
+from . import scores
 
 USER_AGENT = "Grove/0.1 (Ole Miss student dashboard)"
 KEEP_DAYS = 180
@@ -53,11 +55,70 @@ def parse(text: str, sport: str) -> list[dict]:
     return games
 
 
-def fetch(now: datetime | None = None) -> dict:
-    feeds = calendars()
-    if not feeds:
-        raise RuntimeError("set GAMEDAY_CALENDARS to the schedule calendar links")
-    now = now or datetime.now(timezone.utc)
+# Without GAMEDAY_CALENDARS, schedules come from ESPN's public team schedule feeds
+# (the same unofficial source as live scores). Sport label -> ESPN path.
+ESPN_SPORTS = {
+    "football": "football/college-football",
+    "basketball": "basketball/mens-college-basketball",
+    "womens-basketball": "basketball/womens-college-basketball",
+    "baseball": "baseball/college-baseball",
+}
+
+
+def espn_season(sport: str, today) -> int:
+    """ESPN names seasons by the year they end: basketball 2026-27 is 2027, football 2026 is 2026."""
+    if sport == "football":
+        return today.year if today.month >= 3 else today.year - 1  # bowls run into January
+    return today.year + 1 if today.month >= 8 else today.year     # winter/spring sports
+
+
+def parse_espn(raw: dict, sport: str) -> list[dict]:
+    games = []
+    for event in raw.get("events") or []:
+        comp = (event.get("competitions") or [{}])[0]
+        teams = comp.get("competitors") or []
+        us = next((c for c in teams if scores._is_us(c.get("team") or {})), None)
+        them = next((c for c in teams if c is not us), None)
+        when = scores._when(event.get("date") or comp.get("date"))
+        if not us or not them or when is None:
+            continue
+        if comp.get("timeValid") is False:  # time not announced yet ("TBA")
+            start, all_day = when.astimezone(CAMPUS_TZ).date().isoformat(), True
+        else:
+            start, all_day = when.astimezone(timezone.utc).isoformat(timespec="minutes"), False
+        venue = comp.get("venue") or {}
+        city = (venue.get("address") or {}).get("city")
+        tv = [b.get("media", {}).get("shortName") or (b.get("names") or [None])[0]
+              for b in comp.get("broadcasts") or []]
+        team = them.get("team") or {}
+        games.append({
+            "sport": sport,
+            "opponent": team.get("location") or team.get("shortDisplayName") or team.get("displayName") or "TBA",
+            "home": None if comp.get("neutralSite") else us.get("homeAway") == "home",
+            "start": start, "all_day": all_day,
+            "location": ", ".join(p for p in (venue.get("fullName"), city) if p) or None,
+            "tv": next((t for t in tv if t), None),
+            "url": None,
+        })
+    return games
+
+
+def _from_espn(now: datetime) -> tuple[list[dict], list[str]]:
+    games, errors = [], []
+    today = now.astimezone(CAMPUS_TZ).date()
+    for sport, path in ESPN_SPORTS.items():
+        url = f"{scores.BASE}/{path}/teams/{scores.team_id()}/schedule"
+        try:
+            r = requests.get(url, params={"season": espn_season(sport, today)}, timeout=30,
+                             headers={"User-Agent": USER_AGENT})
+            r.raise_for_status()
+            games.extend(parse_espn(r.json(), sport))
+        except Exception as e:  # one sport failing shouldn't hide the others
+            errors.append(f"{sport}: {e}")
+    return games, errors
+
+
+def _from_calendars(feeds) -> tuple[list[dict], list[str]]:
     games, errors = [], []
     for sport, url in feeds:
         try:
@@ -66,6 +127,14 @@ def fetch(now: datetime | None = None) -> dict:
             games.extend(parse(r.text, sport))
         except Exception as e:  # one bad feed shouldn't hide the others
             errors.append(f"{sport}: {e}")
+    return games, errors
+
+
+def fetch(now: datetime | None = None) -> dict:
+    """Calendar links from GAMEDAY_CALENDARS if set; otherwise ESPN's team schedules."""
+    now = now or datetime.now(timezone.utc)
+    feeds = calendars()
+    games, errors = _from_calendars(feeds) if feeds else _from_espn(now)
     if not games:
         raise RuntimeError("no games found; " + "; ".join(errors))
     lo, hi = (now - timedelta(days=2)).isoformat(), (now + timedelta(days=KEEP_DAYS)).isoformat()

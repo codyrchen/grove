@@ -30,11 +30,11 @@ Without `DATABASE_URL`, data goes into a local SQLite file, `grove.db`. Copy `.e
 
 The **Game Day** card shows the next Rebels game with a countdown and TV channel, plus the next few games across the sports you add. On a football game day, the page switches to game-day mode: a red "It's game day! Ole Miss vs. LSU · 6:30 PM" banner under the greeting and a red stripe across the top. During game week, a "Game week: at Georgia on Saturday" pill shows instead.
 
-Schedules come from calendar (.ics) links, the "Download schedule" or "Sync to calendar" option on most college athletics sites. Set them in Railway as sport=url pairs:
+Schedules come from **ESPN's public team schedule feeds** by default (football, men's and women's basketball, baseball), so game day works with no setup. To use the athletics site's own calendar links instead, the "Add to calendar" or "Sync to calendar" option on each schedule page, set them in Railway as sport=url pairs (change any `webcal://` to `https://`):
 ```
 GAMEDAY_CALENDARS=football=https://.../football.ics baseball=https://.../baseball.ics basketball=https://.../mbb.ics
 ```
-The refresher reads them every 3 hours, so time changes (like "TBA" becoming a kickoff time) show up the same day. Until this is set, the card says the schedule isn't set up yet.
+The refresher reads them every 3 hours, so time changes (like "TBA" becoming a kickoff time) show up the same day. The card stays hidden until a schedule loads.
 
 Within 5 days of a home kickoff, the card shows the **kickoff forecast** ("Kickoff: 72° · Partly cloudy · 20% rain") from the hourly Oxford forecast. During home football game week, it also lists the links in `grove/data/gameday_info.json`, such as parking and shuttles or the clear bag policy (see below).
 

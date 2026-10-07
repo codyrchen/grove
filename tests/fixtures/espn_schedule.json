@@ -1,0 +1,24 @@
+{"team": {"id": "145", "displayName": "Ole Miss Rebels"},
+ "events": [
+  {"id": "1", "date": "2026-10-10T23:30Z", "name": "LSU Tigers at Ole Miss Rebels",
+   "competitions": [{"timeValid": true, "neutralSite": false,
+     "venue": {"fullName": "Vaught-Hemingway Stadium", "address": {"city": "Oxford", "state": "MS"}},
+     "broadcasts": [{"media": {"shortName": "SECN"}}],
+     "competitors": [
+       {"homeAway": "home", "team": {"id": "145", "location": "Ole Miss", "displayName": "Ole Miss Rebels"}},
+       {"homeAway": "away", "team": {"id": "99", "location": "LSU", "displayName": "LSU Tigers"}}]}]},
+  {"id": "2", "date": "2026-10-17T05:00Z", "name": "Ole Miss Rebels at Georgia Bulldogs",
+   "competitions": [{"timeValid": false, "neutralSite": false,
+     "venue": {"fullName": "Sanford Stadium", "address": {"city": "Athens", "state": "GA"}},
+     "competitors": [
+       {"homeAway": "home", "team": {"id": "61", "location": "Georgia", "displayName": "Georgia Bulldogs"}},
+       {"homeAway": "away", "team": {"id": "145", "location": "Ole Miss", "displayName": "Ole Miss Rebels"}}]}]},
+  {"id": "3", "date": "2026-11-07T20:00Z", "name": "Ole Miss vs. Texas (neutral)",
+   "competitions": [{"timeValid": true, "neutralSite": true,
+     "venue": {"fullName": "AT&T Stadium", "address": {"city": "Arlington"}},
+     "broadcasts": [{"names": ["ESPN"]}],
+     "competitors": [
+       {"homeAway": "home", "team": {"id": "251", "location": "Texas"}},
+       {"homeAway": "away", "team": {"id": "145", "location": "Ole Miss"}}]}]},
+  {"id": "4", "date": "not a date", "competitions": [{"competitors": []}]}
+ ]}

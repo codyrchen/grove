@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -51,10 +52,58 @@ def test_fetch_keeps_window_and_sorts(monkeypatch):
     assert [g["opponent"] for g in games] == ["Georgia", "Texas", "Mississippi State (Egg Bowl)"]
 
 
-def test_fetch_not_configured(monkeypatch):
+ESPN = json.loads((Path(__file__).parent / "fixtures" / "espn_schedule.json").read_text())
+
+
+def test_parse_espn_schedule():
+    lsu, uga, texas = gameday.parse_espn(ESPN, "football")
+    assert lsu == {"sport": "football", "opponent": "LSU", "home": True, "start": "2026-10-10T23:30+00:00",
+                   "all_day": False, "location": "Vaught-Hemingway Stadium, Oxford", "tv": "SECN", "url": None}
+    # Time not announced yet: kept as a date only, in Oxford's calendar (05:00 UTC is still Oct 17 there).
+    assert (uga["opponent"], uga["home"], uga["start"], uga["all_day"]) == ("Georgia", False, "2026-10-17", True)
+    assert (texas["home"], texas["tv"]) == (None, "ESPN")  # neutral site
+
+
+def test_espn_seasons():
+    from datetime import date
+    assert gameday.espn_season("football", date(2026, 10, 7)) == 2026
+    assert gameday.espn_season("football", date(2027, 1, 2)) == 2026      # bowl season
+    assert gameday.espn_season("basketball", date(2026, 11, 10)) == 2027  # 2026-27 season
+    assert gameday.espn_season("baseball", date(2027, 3, 1)) == 2027
+
+
+def test_fetch_uses_espn_without_calendar_links(monkeypatch):
     monkeypatch.delenv("GAMEDAY_CALENDARS", raising=False)
-    with pytest.raises(RuntimeError, match="GAMEDAY_CALENDARS"):
+    calls = []
+
+    def fake_get(url, **kw):
+        calls.append((url.split("/sports/")[1], kw["params"]))
+        if "football" in url:
+            return FakeJSON(ESPN)
+        if "baseball" in url:
+            return FakeResponse(status=500)
+        return FakeJSON({"events": []})
+    monkeypatch.setattr(gameday.requests, "get", fake_get)
+    games = gameday.fetch(now=datetime(2026, 10, 7, 15, 0, tzinfo=timezone.utc))["games"]
+    assert [g["opponent"] for g in games] == ["LSU", "Georgia", "Texas"]
+    assert calls[0] == ("football/college-football/teams/145/schedule", {"season": 2026})
+    assert ("basketball/mens-college-basketball/teams/145/schedule", {"season": 2027}) in calls
+
+
+def test_fetch_with_nothing_anywhere_raises(monkeypatch):
+    monkeypatch.delenv("GAMEDAY_CALENDARS", raising=False)
+    monkeypatch.setattr(gameday.requests, "get", lambda url, **kw: FakeResponse(status=500))
+    with pytest.raises(RuntimeError, match="no games found"):
         gameday.fetch()
+
+
+class FakeJSON(FakeResponse):
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
+
+    def json(self):
+        return self.data
 
 
 def save_games(conn):
