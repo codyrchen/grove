@@ -36,6 +36,8 @@ GAMEDAY_CALENDARS=football=https://.../football.ics baseball=https://.../basebal
 ```
 The refresher reads them every 3 hours, so time changes (like "TBA" becoming a kickoff time) show up the same day. Until this is set, the card says the schedule isn't set up yet.
 
+Within 5 days of a home kickoff, the card shows the **kickoff forecast** ("Kickoff: 72° · Partly cloudy · 20% rain") from the hourly Oxford forecast. During home football game week, it also lists the links in `grove/data/gameday_info.json`, such as parking and shuttles or the clear bag policy (see below).
+
 Live scores aren't included yet; they need a live data source.
 
 ## Tonight in Oxford
@@ -68,9 +70,10 @@ Some cards are driven by small JSON files in `grove/data/`. Edit them on GitHub 
 | `academic_calendar.json` | **Countdowns** for students (shows dates in the next 120 days) | `{"name": "Last day to drop with a W", "date": "2026-10-30"}` |
 | `moments.json` | Banner under the greeting for a date range; `"mode": "finals"` makes the study mode button pulse | `{"start": "2026-10-19", "end": "2026-10-24", "message": "It's Homecoming week!"}` |
 | `trivia.json` | "Did you know?" line, one fact per day | `{"text": "The Lyceum, finished in 1848, is the oldest building on campus."}` |
+| `gameday_info.json` | **Game-day info** on the Game Day card during home football game week (parking, shuttles, bag policy), plus a note for a specific game date. This file is an object, not a list. | `{"tips": [{"title": "Parking & shuttles", "text": "…", "url": "https://…"}], "notes": {"2026-10-10": "Homecoming game: arrive early."}}` |
 | `square.json` | **On the Square**: one local business featured per week | `{"name": "…", "blurb": "…", "deal": "10% off with student ID", "url": "https://…"}` |
 
-Each file holds a list (`[ … ]`) of entries like these. Dining hours use 24-hour `HH:MM-HH:MM` ranges in Oxford time. A range that ends before it starts, like `20:00-02:00`, runs past midnight. Days are `mon`–`sun`. `closed` lists dates with no service, and `special` replaces the usual hours on a date.
+Each file except `gameday_info.json` holds a list (`[ … ]`) of entries like these. Dining hours use 24-hour `HH:MM-HH:MM` ranges in Oxford time. A range that ends before it starts, like `20:00-02:00`, runs past midnight. Days are `mon`–`sun`. `closed` lists dates with no service, and `special` replaces the usual hours on a date.
 
 **Check every date, hour and fact against an official source before adding it.** The trivia facts that ship with Grove are well known, but confirm them too before launch.
 

@@ -96,3 +96,28 @@ def test_widget_tba_game_counts_all_day(conn):
 def test_widget_not_set_up(conn):
     w = widgets.gameday(conn)
     assert w["data"] is None and "isn't set up" in w["message"]
+
+
+def test_kickoff_forecast_and_game_day_info(conn, tmp_path):
+    save_games(conn)
+    # LSU kicks off 6:30 p.m. Oxford time on Oct 10, which is in the 6 p.m. forecast hour.
+    db.save_data(conn, "weather", {"forecast": [
+        {"t": "2026-10-10T17:00", "temp": 75, "code": 0, "day": 1, "rain": 0},
+        {"t": "2026-10-10T18:00", "temp": 72, "code": 2, "day": 1, "rain": 20},
+    ]})
+    (tmp_path / "gameday_info.json").write_text(
+        '{"tips": [{"title": "Parking & shuttles", "url": "https://example.com/parking"},'
+        ' {"title": "Bad link", "url": "javascript:alert(1)"}, {"nope": true}],'
+        ' "notes": {"2026-10-10": "Homecoming game: arrive early."}}')
+    d = widgets.gameday(conn, now=datetime(2026, 10, 8, 15, 0, tzinfo=timezone.utc), directory=tmp_path)["data"]
+    assert d["upcoming"][0]["forecast"] == {"temp": 72, "text": "Partly cloudy", "icon": "cloud-sun", "rain": 20}
+    assert d["tips"] == [{"title": "Parking & shuttles", "text": None, "url": "https://example.com/parking"},
+                         {"title": "Bad link", "text": None, "url": None}]
+    assert d["notes"] == "Homecoming game: arrive early."
+
+
+def test_no_forecast_for_away_games_or_beyond_forecast(conn):
+    save_games(conn)
+    db.save_data(conn, "weather", {"forecast": []})
+    after_lsu = widgets.gameday(conn, now=datetime(2026, 10, 12, 15, 0, tzinfo=timezone.utc))["data"]
+    assert after_lsu["upcoming"][0]["opponent"] == "Georgia" and after_lsu["upcoming"][0]["forecast"] is None

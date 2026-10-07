@@ -8,7 +8,7 @@ from pathlib import Path
 
 from . import content, db
 from .config import CAMPUS_TZ
-from .pipelines.weather import SNOW_CODES
+from .pipelines.weather import SNOW_CODES, describe
 
 QUICK_LINKS = [
     {"label": "myOleMiss", "url": "https://my.olemiss.edu", "icon": "person-badge", "color": "#ce1126"},
@@ -166,7 +166,21 @@ def _game_start(g: dict) -> datetime:
     return datetime.fromisoformat(g["start"])
 
 
-def gameday(conn: db.DB, now: datetime | None = None) -> dict:
+def kickoff_forecast(conn: db.DB, game: dict) -> dict | None:
+    """The hourly forecast for a game's kickoff, once it's within the 5-day forecast."""
+    if game.get("all_day") or game.get("home") is False:
+        return None  # no time yet, or an away game (the forecast is for Oxford)
+    row = db.load(conn, "weather")
+    hours = (row and row["data"] or {}).get("forecast") or []
+    kickoff = datetime.fromisoformat(game["start"]).astimezone(CAMPUS_TZ).strftime("%Y-%m-%dT%H:00")
+    h = next((h for h in hours if h["t"] == kickoff), None)
+    if not h:
+        return None
+    text, icon = describe(h["code"], bool(h["day"]))
+    return {"temp": h["temp"], "text": text, "icon": icon, "rain": h["rain"]}
+
+
+def gameday(conn: db.DB, now: datetime | None = None, directory: Path | None = None) -> dict:
     """Next Rebels games, plus today's and this week's football game for game-day mode."""
     out = stored(conn, "gameday", now)
     if out["data"] is None:
@@ -182,8 +196,15 @@ def gameday(conn: db.DB, now: datetime | None = None) -> dict:
             upcoming.append({**g, "local_date": start.astimezone(CAMPUS_TZ).date().isoformat(),
                              "live": start <= now and not g.get("all_day")})
     football = [g for g in upcoming if g["sport"] == "football"]
+    if upcoming:
+        upcoming[0] = {**upcoming[0], "forecast": kickoff_forecast(conn, upcoming[0])}
+    info = content.load("gameday_info.json", {}, directory)
+    info = info if isinstance(info, dict) else {}
     out["data"] = {
         "upcoming": upcoming[:4],
+        "tips": [{"title": t["title"], "text": t.get("text"), "url": _web_url(t.get("url"))}
+                 for t in info.get("tips", []) if isinstance(t, dict) and t.get("title")],
+        "notes": (info.get("notes") or {}).get(upcoming[0]["local_date"]) if upcoming else None,
         "today": next((g for g in football if g["local_date"] == today.isoformat()), None),
         "this_week": next((g for g in football
                            if 0 < (date.fromisoformat(g["local_date"]) - today).days <= 6), None),

@@ -386,3 +386,13 @@ a { color: inherit; }
 .class-next-label { font-size: 1.6rem; font-weight: 800; line-height: 1.15; margin: .3rem 0 .15rem; }
 .class-next-when { font-weight: 600; }
 .class-pill { margin-right: .35rem; background: rgba(143, 200, 242, .25); }
+
+/* game day extras */
+.game-forecast { display: inline-flex; align-items: center; gap: .4rem; margin-top: .6rem; padding: .25rem .8rem;
+  border-radius: 999px; background: rgba(255, 255, 255, .1); font-weight: 600; font-size: .9rem; }
+.game-forecast .bi { color: #ffd166; }
+.game-note { margin-top: .6rem; color: #ffd166; font-weight: 600; font-size: .9rem; }
+.game-tips { margin-top: .9rem; padding-top: .6rem; border-top: 1px solid rgba(143, 200, 242, .35); }
+.game-tip { padding: .2rem 0; font-size: .9rem; color: var(--muted); }
+.game-tip a, .game-tip strong { color: #fff; font-weight: 700; text-decoration: none; }
+.game-tip a:hover { text-decoration: underline; }

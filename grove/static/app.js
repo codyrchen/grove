@@ -361,7 +361,30 @@
       big.appendChild(el("div", "game-when", gameTime(next)));
       var extra = [countdown(next), next.tv].filter(Boolean).join(" · ");
       if (extra) big.appendChild(el("div", "game-extra", extra));
+      if (next.forecast) {
+        var f = next.forecast;
+        var fc = el("div", "game-forecast");
+        fc.appendChild(icon(f.icon));
+        fc.appendChild(el("span", null, "Kickoff: " + f.temp + "° · " + f.text +
+          (f.rain ? " · " + f.rain + "% rain" : "")));
+        big.appendChild(fc);
+      }
+      if (d.notes) big.appendChild(el("div", "game-note", d.notes));
       body.appendChild(big);
+
+      // Parking, shuttles, bag policy... for home game week and game day.
+      var homeSoon = next.home && (d.today || d.this_week) && next.sport === "football";
+      if (homeSoon && d.tips.length) {
+        var tips = el("div", "game-tips");
+        tips.appendChild(el("div", "game-label", "Game-day info"));
+        d.tips.forEach(function (t) {
+          var row = el("div", "game-tip");
+          row.appendChild(t.url ? link(t.url, t.title) : el("strong", null, t.title));
+          if (t.text) row.appendChild(el("span", null, " · " + t.text));
+          tips.appendChild(row);
+        });
+        body.appendChild(tips);
+      }
 
       var rest = d.upcoming.slice(1);
       if (rest.length) {

@@ -28,6 +28,12 @@ def test_weather_upcoming_hours():
     assert w["hours"][4]["icon"] == "cloud-moon"  # partly cloudy at night
 
 
+def test_weather_keeps_full_hourly_forecast():
+    w = weather.parse(json.loads((FIXTURES / "open_meteo.json").read_text()))
+    assert len(w["forecast"]) == 48
+    assert w["forecast"][18] == {"t": "2026-10-07T18:00", "temp": 68, "code": 2, "day": 1, "rain": None}
+
+
 def test_weather_without_hourly_data():
     raw = json.loads((FIXTURES / "open_meteo.json").read_text())
     del raw["hourly"]

@@ -11,7 +11,7 @@ PARAMS = {
     "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day",
     "daily": "weather_code,temperature_2m_max,temperature_2m_min,"
              "precipitation_probability_max,sunrise,sunset",
-    "hourly": "temperature_2m,weather_code,is_day",
+    "hourly": "temperature_2m,weather_code,is_day,precipitation_probability",
     "temperature_unit": "fahrenheit",
     "wind_speed_unit": "mph",
     "timezone": "America/Chicago",
@@ -77,6 +77,16 @@ def upcoming_hours(raw: dict, count: int = 5, step: int = 3) -> list[dict]:
     return out
 
 
+def all_hours(raw: dict) -> list[dict]:
+    """Every forecast hour (Oxford time), compact, for things like the kickoff forecast."""
+    h = raw.get("hourly")
+    if not h:
+        return []
+    rain = h.get("precipitation_probability") or [None] * len(h["time"])
+    return [{"t": t, "temp": round(h["temperature_2m"][i]), "code": h["weather_code"][i],
+             "day": h["is_day"][i], "rain": rain[i]} for i, t in enumerate(h["time"])]
+
+
 def parse(raw: dict) -> dict:
     cur, daily = raw["current"], raw["daily"]
     text, icon = describe(cur["weather_code"], bool(cur.get("is_day", 1)))
@@ -101,6 +111,7 @@ def parse(raw: dict) -> dict:
         "code": cur["weather_code"],
         "sunset": clock(daily["sunset"][0]) if daily.get("sunset") else None,
         "hours": upcoming_hours(raw),
+        "forecast": all_hours(raw),
         "days": days,
     }
 
