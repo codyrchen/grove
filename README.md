@@ -1,6 +1,6 @@
 # Grove
 
-Grove is a daily home page for Ole Miss students and fans. It shows a campus photo of the day, a big greeting with your name, Oxford weather by the hour, campus news and quick links. Deadlines, dining, Rebels games, events and an "Ask the Grove" chat are coming next. It's inspired by Princeton's [Today](https://github.com/TigerAppsOrg/Today).
+Grove is a daily home page for Ole Miss students and fans. It shows a campus photo of the day, a big greeting with your name, Rebels game day, your next class, what's open for dining, what's on tonight in Oxford, weather by the hour, countdowns, campus news and quick links. It's inspired by Princeton's [Today](https://github.com/TigerAppsOrg/Today).
 
 - Click the name in the greeting to change it.
 - **Settings** turns widgets on and off and switches between 2 and 3 columns. **Arrange** lets you drag widgets around. Phones always show one column.
@@ -159,7 +159,12 @@ For later releases, bump `version` in `manifest.json`, rebuild, and upload. You 
 
 ## Roadmap
 
-1. ~~Dashboard, weather, news, quick links~~
-2. ~~Rebels game day~~; deadlines countdown, dining, events with a free-food tag, a RebelSnatch widget, live scores
-3. "Ask the Grove" chat (OpenAI, with answers that cite their sources)
-4. ~~Chrome new-tab extension~~; home-screen app, building hours, buses
+Done: dashboard, photo of the day, weather, news, quick links, search, study mode, Chrome extension, Student/Fan/Alum mode, game day (schedule, game-day mode, kickoff forecast, game-day info), My Classes, Dining Open Now, Tonight in Oxford, countdowns, campus moments, trivia, snow day, On the Square.
+
+Next:
+1. Data sources to confirm and plug in: athletics `.ics` links, event calendars, dining hours, academic dates
+2. Live scores and final results on game day
+3. O.U.T. bus arrivals (needs a public feed)
+4. Dining menus (needs the dining provider's menu source)
+5. "Ask the Grove" chat (OpenAI, with answers that cite their sources)
+6. Home-screen app (PWA) and a photo-of-the-week vote

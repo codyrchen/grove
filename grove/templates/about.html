@@ -3,15 +3,16 @@
 {% block body %}
 <main class="container py-5" style="max-width: 720px">
   <h1 class="h3 fw-bold mb-3">About {{ SITE_NAME }}</h1>
-  <p>{{ SITE_NAME }} puts your Ole Miss day on one page: a campus photo of the day, Oxford weather,
-     campus news and the links you use every day. More is coming: deadlines, dining, Rebels games,
-     events and a chat you can ask about anything on campus.</p>
+  <p>{{ SITE_NAME }} puts your Ole Miss day on one page: a campus photo of the day, Rebels game day,
+     your next class, what's open for dining, what's on tonight in Oxford, weather, countdowns and campus news.</p>
   <ul>
     <li>Click your name in the greeting to change it.</li>
-    <li><strong>Settings</strong> lets you choose widgets and columns. <strong>Arrange</strong> lets you drag them around.</li>
+    <li><strong>Settings</strong> lets you pick Student, Fan or Alum, add your class CRNs, choose widgets and columns.
+        <strong>Arrange</strong> lets you drag widgets around.</li>
     <li><strong>Study mode</strong> hides everything except a big clock and a focus timer.</li>
+    <li>Press <kbd>/</kbd> to search. Start with <code>om</code> to search only olemiss.edu.</li>
   </ul>
-  <p>Your name and layout are saved only in this browser.</p>
+  <p>Your name, layout, CRNs and countdowns are saved only in this browser.</p>
 
   <h2 class="h5 fw-semibold mt-4">Share your campus photo</h2>
   <p>Every day's background is a photo of Ole Miss or Oxford taken by a student or fan, with their
@@ -25,6 +26,8 @@
   <ul>
     <li>Weather: <a href="https://open-meteo.com" rel="noopener">Open-Meteo</a></li>
     <li>News: Ole Miss news feeds</li>
+    <li>Classes: Ole Miss's public class search</li>
+    <li>Games and events: published athletics, campus and Oxford calendars</li>
   </ul>
   <p class="text-muted small">Built by a student. Not affiliated with the University of Mississippi.</p>
 </main>
