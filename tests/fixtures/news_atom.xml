@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Ole Miss Athletics</title>
+  <entry>
+    <title>Rebels Win Homecoming Game</title>
+    <link rel="alternate" href="https://example.olemiss.edu/rebels-win"/>
+    <published>2026-10-04T22:15:00Z</published>
+    <summary>A big win in Vaught-Hemingway Stadium.</summary>
+  </entry>
+</feed>

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}About · {{ SITE_NAME }}{% endblock %}
+{% block body %}
+<main class="container py-5" style="max-width: 720px">
+  <h1 class="h3 fw-bold mb-3">About {{ SITE_NAME }}</h1>
+  <p>{{ SITE_NAME }} puts your Ole Miss day on one page: weather in Oxford, campus news and the
+     links you use every day. More is coming: deadlines, dining, Rebels games, events and a
+     chat you can ask about anything on campus.</p>
+  <p>Use <strong>Settings</strong> to choose widgets and columns, and <strong>Arrange</strong> to
+     drag them around. Your layout is saved in this browser.</p>
+  <h2 class="h5 fw-semibold mt-4">Where the data comes from</h2>
+  <ul>
+    <li>Weather: <a href="https://open-meteo.com" rel="noopener">Open-Meteo</a></li>
+    <li>News: Ole Miss news feeds</li>
+  </ul>
+  <p class="text-muted small">Built by a student. Not affiliated with the University of Mississippi.</p>
+</main>
+{% endblock %}

@@ -1,0 +1,109 @@
+:root {
+  --navy: #14213d;
+  --navy-2: #1f3260;
+  --red: #ce1126;
+  --red-dark: #a50e1f;
+  --bg: #f3f5f9;
+  --card: #fff;
+  --card-border: #e3e7ef;
+  --text: #1d2433;
+  --muted: #6b7385;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1524;
+    --card: #182036;
+    --card-border: #26304a;
+    --text: #e6e9f0;
+    --muted: #98a1b5;
+  }
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body > footer { margin-top: auto; }
+.text-muted { color: var(--muted) !important; }
+a { color: inherit; }
+
+/* nav */
+.grove-nav { background: var(--navy); border-bottom: 4px solid var(--red); }
+.grove-nav .nav-link { color: rgba(255, 255, 255, .85); font-weight: 500; text-decoration: none; }
+.grove-nav .nav-link:hover { color: #fff; }
+.brand-mark {
+  display: inline-grid; place-items: center;
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--red); color: #fff; font-size: 1.05rem;
+}
+.btn-grove { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+.btn-grove:hover, .btn-grove:focus { background: var(--red-dark); border-color: var(--red-dark); color: #fff; }
+
+/* dashboard grid */
+.grove-main { max-width: 1400px; margin: 0 auto; width: 100%; }
+.grove-grid { display: flex; gap: 1rem; align-items: flex-start; }
+.grove-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1rem; min-height: 4rem; }
+.grove-col > .widget { flex: none; }
+@media (max-width: 767.98px) {
+  .grove-grid { flex-direction: column; align-items: stretch; }
+  .grove-col { flex: none; min-height: 0; }
+}
+
+/* widget card */
+.widget {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(20, 33, 61, .04);
+  overflow: hidden;
+}
+.widget-head {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .75rem 1rem; border-bottom: 1px solid var(--card-border);
+  font-weight: 600;
+}
+.widget-head .updated { margin-left: auto; font-size: .75rem; font-weight: 400; color: var(--muted); }
+.widget-head .bi { color: var(--red); }
+.widget-body { padding: 1rem; }
+.widget-note { font-size: .875rem; color: var(--muted); }
+.widget-stale { font-size: .75rem; color: #b26a00; padding: .25rem 1rem; background: rgba(255, 170, 0, .1); }
+
+/* arrange mode */
+.arranging .widget { cursor: grab; outline: 2px dashed var(--card-border); outline-offset: 2px; }
+.arranging .widget-head::after { content: "\F4D6"; font-family: "bootstrap-icons"; color: var(--muted); }
+.arranging .grove-col { background: rgba(127, 127, 127, .06); border-radius: 14px; padding: .5rem; }
+.widget.dragging { opacity: .4; }
+.arranging .widget a { pointer-events: none; }
+
+/* weather */
+.wx-now { display: flex; align-items: center; gap: 1rem; }
+.wx-now .bi { font-size: 2.75rem; color: var(--red); }
+.wx-temp { font-size: 2.5rem; font-weight: 700; line-height: 1; }
+.wx-days { display: grid; grid-template-columns: repeat(5, 1fr); gap: .25rem; margin-top: 1rem; text-align: center; font-size: .8rem; }
+.wx-days .bi { font-size: 1.25rem; display: block; margin: .15rem 0; }
+.wx-days .lo { color: var(--muted); }
+
+/* news */
+.news-list { list-style: none; margin: 0; padding: 0; }
+.news-list li { display: flex; gap: .75rem; padding: .6rem 0; border-top: 1px solid var(--card-border); }
+.news-list li:first-child { border-top: 0; padding-top: 0; }
+.news-list img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; flex: none; }
+.news-list a { text-decoration: none; font-weight: 500; }
+.news-list a:hover { text-decoration: underline; }
+
+/* links */
+.links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: .5rem; }
+.links-grid a {
+  display: flex; flex-direction: column; align-items: center; gap: .25rem;
+  padding: .75rem .5rem; border: 1px solid var(--card-border); border-radius: 10px;
+  text-decoration: none; font-size: .85rem; font-weight: 500;
+}
+.links-grid a:hover { border-color: var(--red); }
+.links-grid .bi { font-size: 1.3rem; color: var(--red); }
+
+/* modal in dark mode */
+.modal-content { background: var(--card); color: var(--text); }

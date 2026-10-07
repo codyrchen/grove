@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block nav_actions %}
+  <button class="btn btn-sm btn-outline-light d-none" id="arrange-done" type="button">
+    <i class="bi bi-check-lg"></i> Done</button>
+  <button class="btn btn-sm btn-link nav-link" id="arrange-btn" type="button" title="Arrange widgets">
+    <i class="bi bi-arrows-move"></i><span class="d-none d-sm-inline ms-1">Arrange</span></button>
+  <button class="btn btn-sm btn-link nav-link" type="button" title="Settings"
+          data-bs-toggle="modal" data-bs-target="#settings">
+    <i class="bi bi-gear"></i><span class="d-none d-sm-inline ms-1">Settings</span></button>
+{% endblock %}
+
+{% block body %}
+<main class="container-fluid px-3 px-lg-4 py-4 grove-main">
+  <header class="mb-4" id="greeting">
+    <h1 class="h3 fw-bold mb-1" id="greeting-hello">Hey, Rebel</h1>
+    <div class="text-muted" id="greeting-sub"></div>
+  </header>
+  <div class="arrange-hint alert alert-light border d-none" id="arrange-hint">
+    Drag widgets by their header to move them. Click <strong>Done</strong> when you're finished.
+  </div>
+  <div class="grove-grid" id="grid" aria-live="polite"></div>
+</main>
+
+<div class="modal fade" id="settings" tabindex="-1" aria-labelledby="settings-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title h5" id="settings-title">Settings</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h3 class="h6 fw-semibold">Widgets</h3>
+        <div id="widget-toggles" class="mb-4">
+          {% for id, title in widgets.items() %}
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="w-{{ id }}" data-widget="{{ id }}">
+              <label class="form-check-label" for="w-{{ id }}">{{ title }}</label>
+            </div>
+          {% endfor %}
+        </div>
+        <h3 class="h6 fw-semibold">Columns</h3>
+        <div class="btn-group mb-2" role="group" aria-label="Number of columns">
+          <input type="radio" class="btn-check" name="columns" id="cols-2" value="2">
+          <label class="btn btn-outline-secondary" for="cols-2">2</label>
+          <input type="radio" class="btn-check" name="columns" id="cols-3" value="3">
+          <label class="btn btn-outline-secondary" for="cols-3">3</label>
+        </div>
+        <div class="small text-muted">Phones always show one column.</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link text-muted me-auto" id="reset-layout">Reset layout</button>
+        <button type="button" class="btn btn-grove" data-bs-dismiss="modal">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{# A list of pairs, not a dict: tojson sorts dict keys, which would lose the default order. #}
+<script>window.GROVE_WIDGETS = {{ widgets.items() | list | tojson }};</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}

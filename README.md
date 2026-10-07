@@ -1,0 +1,64 @@
+# Grove
+
+Grove is a daily dashboard for Ole Miss students: Oxford weather, campus news and quick links on one page, with deadlines, dining, Rebels games, events and an "Ask the Grove" chat coming next. It's inspired by Princeton's [Today](https://github.com/TigerAppsOrg/Today).
+
+Students can turn widgets on and off, pick 2 or 3 columns, and drag widgets around. The layout is saved in their browser. Phones always show one column.
+
+## How it works
+
+- **Pipelines** (`grove/pipelines/`) fetch each source and save the result in the database. `grove/refresh.py` runs each one on its own schedule (weather every 30 min, news every hour).
+- **Widgets** (`grove/widgets.py`) only read the database, so a slow or broken source never slows down the page. If a fetch fails, the last good data stays up, and the widget says so once it's more than a few hours old.
+- **The page** (`grove/templates/dashboard.html`, `grove/static/app.js`) loads everything from `/api/widgets` and draws it in the browser. The same JSON will feed the Chrome new-tab extension later.
+
+## Run it locally
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
+
+python -m grove.refresh --once                  # fetch weather and news once
+python -m flask --app grove.web run --debug     # http://127.0.0.1:5000
+```
+
+Without `DATABASE_URL`, data goes into a local SQLite file, `grove.db`. Copy `.env.example` to `.env` to set the semester dates (for "Week N of the semester") or the news feeds.
+
+## Tests
+
+```bash
+python -m pytest -q
+```
+
+To also run the database tests against Postgres, set `TEST_DATABASE_URL` (for example `postgresql://localhost/grove_test`).
+
+## Deploy on Railway
+
+1. **New Project → Deploy from GitHub repo**, and pick `grove`.
+2. In the same project, **+ New → Database → PostgreSQL**.
+3. In the Grove service's **Variables**, add:
+   ```
+   DATABASE_URL=${{Postgres.DATABASE_URL}}
+   SEMESTER_START=2026-08-24
+   SEMESTER_END=2026-12-11
+   ```
+   Check the dates against the registrar's academic calendar.
+4. `railway.json` runs `start.sh`, which starts the refresher in the background and the website with gunicorn. Railway health-checks `/healthz`.
+5. **Settings → Networking**: generate a Railway domain, or add your own.
+
+After a few minutes, the deploy logs should show `weather: updated` and `news: updated`.
+
+If a widget stays on "Loading for the first time", look for a `! news failed:` line in the logs. The news feed URL is a guess until it's checked live; change it with `NEWS_FEEDS` (space-separated RSS or Atom URLs) without redeploying code.
+
+## Adding a widget
+
+1. Write `grove/pipelines/<name>.py` with a `fetch()` that returns JSON-friendly data. Keep the parsing in a separate `parse()` and test it against a saved sample in `tests/fixtures/`.
+2. Register it in `PIPELINES` in `grove/refresh.py` with its refresh interval.
+3. Add it to `WIDGETS` in `grove/widgets.py` (and `STALE_AFTER` if needed).
+4. Add a renderer to `render` and an icon to `ICONS` in `grove/static/app.js`.
+
+## Roadmap
+
+1. ~~Dashboard, weather, news, quick links~~
+2. Deadlines countdown, dining, Rebels athletics, events with a free-food tag, a RebelSnatch widget
+3. "Ask the Grove" chat (OpenAI, with answers that cite their sources)
+4. Chrome new-tab extension, home-screen app, building hours, buses
