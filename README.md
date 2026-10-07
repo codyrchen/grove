@@ -48,6 +48,22 @@ EVENTS_CALENDARS=campus=https://.../events.ics oxford=https://.../calendar.ics
 ```
 The same event appearing in two feeds is shown once. The card stays hidden until at least one feed has events.
 
+## Content you edit (grove/data)
+
+Some cards are driven by small JSON files in `grove/data/`. Edit them on GitHub and Railway redeploys. A missing or broken file just counts as empty, so a typo can't take the site down. Cards with nothing in them stay hidden.
+
+| File | What it's for | Example entry |
+|---|---|---|
+| `dining.json` | **Dining Open Now**: open now, "Closes in 20 min", when closed places reopen | `{"name": "Rebel Market", "menu_url": "https://…", "hours": {"mon": ["07:00-10:00", "11:00-20:00"], "sat": ["20:00-02:00"]}, "closed": ["2026-11-26"], "special": {"2026-11-25": ["07:00-14:00"]}}` |
+| `academic_calendar.json` | **Countdowns** for students (shows dates in the next 120 days) | `{"name": "Last day to drop with a W", "date": "2026-10-30"}` |
+| `moments.json` | Banner under the greeting for a date range; `"mode": "finals"` makes the study mode button pulse | `{"start": "2026-10-19", "end": "2026-10-24", "message": "It's Homecoming week!"}` |
+| `trivia.json` | "Did you know?" line, one fact per day | `{"text": "The Lyceum, finished in 1848, is the oldest building on campus."}` |
+| `square.json` | **On the Square**: one local business featured per week | `{"name": "…", "blurb": "…", "deal": "10% off with student ID", "url": "https://…"}` |
+
+Each file holds a list (`[ … ]`) of entries like these. Dining hours use 24-hour `HH:MM-HH:MM` ranges in Oxford time. A range that ends before it starts, like `20:00-02:00`, runs past midnight. Days are `mon`–`sun`. `closed` lists dates with no service, and `special` replaces the usual hours on a date.
+
+**Check every date, hour and fact against an official source before adding it.** The trivia facts that ship with Grove are well known, but confirm them too before launch.
+
 ## Campus photos
 
 The background is a **photo of the day**. Everyone sees the same photo, and it changes at midnight in Oxford. Until any photos are added, the page uses a navy and cardinal gradient.

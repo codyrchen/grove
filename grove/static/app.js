@@ -5,7 +5,7 @@
   var WIDGETS = {};                             // id -> title
   window.GROVE_WIDGETS.forEach(function (w) { WIDGETS[w[0]] = w[1]; });
   var ICONS = { weather: "cloud-sun", news: "newspaper", links: "link-45deg", gameday: "trophy",
-                countdowns: "hourglass-split", square: "shop", tonight: "stars" };
+                countdowns: "hourglass-split", square: "shop", tonight: "stars", dining: "cup-hot" };
   var foodOnly = false;                         // "Free food" filter on the Tonight card
   var ROLES = window.GROVE_ROLES;               // role -> widgets it starts with
   var ROLE_KEY = "grove.role";
@@ -372,6 +372,23 @@
                                   : "Counting down to your next trip back to Oxford?"));
       }
       body.appendChild(countdownForm());
+    },
+
+    dining: function (d, body) {
+      body.appendChild(el("div", "game-label",
+        (d.late_night ? "Late night · " : "") + d.open_count + " open now"));
+      var ul = el("ul", "dining-list");
+      d.places.forEach(function (p) {
+        var li = el("li", p.open ? "is-open" : "is-closed");
+        li.appendChild(el("span", "dining-dot"));
+        var text = el("div", "dining-text");
+        text.appendChild(el("div", "dining-name", p.name));
+        text.appendChild(el("div", "dining-status" + (p.closing_soon ? " soon" : ""), p.text));
+        li.appendChild(text);
+        if (p.menu_url) li.appendChild(link(p.menu_url, "Menu"));
+        ul.appendChild(li);
+      });
+      body.appendChild(ul);
     },
 
     tonight: function (d, body) {

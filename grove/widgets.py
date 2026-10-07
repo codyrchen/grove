@@ -232,6 +232,71 @@ def tonight(conn: db.DB, now: datetime | None = None) -> dict:
     return out
 
 
+DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+
+def _clock_label(t: datetime) -> str:
+    """9:00 -> '9 AM', 13:30 -> '1:30 PM'"""
+    hour = t.hour % 12 or 12
+    ampm = "AM" if t.hour < 12 else "PM"
+    return f"{hour} {ampm}" if t.minute == 0 else f"{hour}:{t.minute:02d} {ampm}"
+
+
+def _ranges_on(place: dict, day: date) -> list[tuple[datetime, datetime]]:
+    """Opening windows that start on `day`, as campus-time datetimes. '20:00-02:00' runs past midnight."""
+    if day.isoformat() in (place.get("closed") or []):
+        return []
+    special = place.get("special") or {}
+    ranges = special.get(day.isoformat(), (place.get("hours") or {}).get(DAY_KEYS[day.weekday()], []))
+    out = []
+    for r in ranges if isinstance(ranges, list) else []:
+        try:
+            a, b = r.split("-")
+            start = datetime.combine(day, datetime.strptime(a.strip(), "%H:%M").time(), CAMPUS_TZ)
+            end = datetime.combine(day, datetime.strptime(b.strip(), "%H:%M").time(), CAMPUS_TZ)
+        except (ValueError, AttributeError):
+            continue
+        if end <= start:
+            end += timedelta(days=1)
+        out.append((start, end))
+    return out
+
+
+def dining_status(place: dict, now: datetime) -> dict:
+    local = now.astimezone(CAMPUS_TZ)
+    windows = []
+    for offset in (-1, 0, 1, 2, 3, 4, 5, 6, 7):  # yesterday's late-night hours can still be open
+        windows += _ranges_on(place, local.date() + timedelta(days=offset))
+    windows.sort()
+    current = next((w for w in windows if w[0] <= local < w[1]), None)
+    if current:
+        mins = int((current[1] - local).total_seconds() // 60)
+        text = f"Closes in {mins} min" if mins < 60 else f"Open until {_clock_label(current[1])}"
+        return {"open": True, "text": text, "closing_soon": mins < 60, "sort": current[1].isoformat()}
+    nxt = next((w for w in windows if w[0] > local), None)
+    if not nxt:
+        return {"open": False, "text": "Closed", "closing_soon": False, "sort": "9"}
+    days = (nxt[0].date() - local.date()).days
+    when = (_clock_label(nxt[0]) if days == 0 else f"tomorrow {_clock_label(nxt[0])}" if days == 1
+            else f"{nxt[0]:%A} {_clock_label(nxt[0])}")
+    return {"open": False, "text": f"Opens {when}", "closing_soon": False, "sort": "1" + nxt[0].isoformat()}
+
+
+def dining(now: datetime | None = None, directory: Path | None = None) -> dict:
+    places = [p for p in content.entries("dining.json", directory) if p.get("name")]
+    if not places:
+        return {"data": None, "empty": True}
+    now = now or datetime.now(timezone.utc)
+    rows = []
+    for p in places:
+        st = dining_status(p, now)
+        rows.append({"name": p["name"], "area": p.get("area"), "menu_url": _web_url(p.get("menu_url")), **st})
+    # Open places first (closing soonest first), then by when they open.
+    rows.sort(key=lambda r: (not r["open"], r.pop("sort")))
+    late = now.astimezone(CAMPUS_TZ).hour >= 21 or now.astimezone(CAMPUS_TZ).hour < 4
+    return {"data": {"places": rows, "open_count": sum(r["open"] for r in rows), "late_night": late}}
+
+
 def build(conn: db.DB, name: str) -> dict:
     if name == "greeting":
         return {"data": {**greeting(), "moment": current_moment(), "trivia": trivia_of_the_day(),
@@ -247,6 +312,8 @@ def build(conn: db.DB, name: str) -> dict:
         return gameday(conn)
     if name == "tonight":
         return tonight(conn)
+    if name == "dining":
+        return dining()
     if name == "links":
         return {"data": {"links": QUICK_LINKS}}
     return stored(conn, name)
@@ -256,6 +323,7 @@ def build(conn: db.DB, name: str) -> dict:
 WIDGETS = {
     "gameday": "Game Day",
     "weather": "Weather",
+    "dining": "Dining Open Now",
     "tonight": "Tonight in Oxford",
     "countdowns": "Countdowns",
     "news": "Campus News",
@@ -265,7 +333,7 @@ WIDGETS = {
 
 # Widgets each kind of visitor starts with (they can turn any on or off later).
 ROLES = {
-    "student": ["gameday", "weather", "tonight", "countdowns", "news", "links", "square"],
+    "student": ["gameday", "weather", "dining", "tonight", "countdowns", "news", "links", "square"],
     "fan": ["gameday", "weather", "tonight", "countdowns", "news", "square"],
     "alumni": ["gameday", "weather", "tonight", "countdowns", "news", "square"],
 }

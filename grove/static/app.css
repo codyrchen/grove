@@ -367,3 +367,16 @@ a { color: inherit; }
   display: inline-block; margin-left: .4rem; padding: 0 .5rem; border-radius: 999px;
   background: rgba(126, 226, 168, .18); color: #7ee2a8; font-weight: 700; font-size: .75rem;
 }
+
+/* dining */
+.dining-list { list-style: none; padding: 0; margin: .4rem 0 0; }
+.dining-list li { display: flex; align-items: center; gap: .75rem; padding: .5rem 0; border-top: 1px solid rgba(143, 200, 242, .2); }
+.dining-list li:first-child { border-top: 0; }
+.dining-dot { width: .6rem; height: .6rem; border-radius: 50%; flex: none; background: rgba(255, 255, 255, .3); }
+.is-open .dining-dot { background: #7ee2a8; box-shadow: 0 0 0 3px rgba(126, 226, 168, .2); }
+.dining-text { flex: 1; min-width: 0; }
+.dining-name { font-weight: 700; }
+.is-closed .dining-name { color: rgba(255, 255, 255, .7); }
+.dining-status { color: var(--muted); font-size: .85rem; }
+.dining-status.soon { color: #ffd166; }
+.dining-list a { font-size: .8rem; font-weight: 700; color: var(--sky); text-decoration: none; }
