@@ -20,11 +20,23 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 
-python -m grove.refresh --once                  # fetch weather and news once
+python -m grove.refresh --once                  # fetch every source once
 python -m flask --app grove.web run --debug     # http://127.0.0.1:5000
 ```
 
 Without `DATABASE_URL`, data goes into a local SQLite file, `grove.db`. Copy `.env.example` to `.env` to set the semester dates (for "Week N of the semester") or the news feeds.
+
+## Game day
+
+The **Game Day** card shows the next Rebels game with a countdown and TV channel, plus the next few games across the sports you add. On a football game day, the page switches to game-day mode: a red "It's game day! Ole Miss vs. LSU · 6:30 PM" banner under the greeting and a red stripe across the top. During game week, a "Game week: at Georgia on Saturday" pill shows instead.
+
+Schedules come from calendar (.ics) links, the "Download schedule" or "Sync to calendar" option on most college athletics sites. Set them in Railway as sport=url pairs:
+```
+GAMEDAY_CALENDARS=football=https://.../football.ics baseball=https://.../baseball.ics basketball=https://.../mbb.ics
+```
+The refresher reads them every 3 hours, so time changes (like "TBA" becoming a kickoff time) show up the same day. Until this is set, the card says the schedule isn't set up yet.
+
+Live scores aren't included yet; they need a live data source.
 
 ## Campus photos
 
@@ -109,6 +121,6 @@ For later releases, bump `version` in `manifest.json`, rebuild, and upload. You 
 ## Roadmap
 
 1. ~~Dashboard, weather, news, quick links~~
-2. Deadlines countdown, dining, Rebels athletics, events with a free-food tag, a RebelSnatch widget
+2. ~~Rebels game day~~; deadlines countdown, dining, events with a free-food tag, a RebelSnatch widget, live scores
 3. "Ask the Grove" chat (OpenAI, with answers that cite their sources)
 4. ~~Chrome new-tab extension~~; home-screen app, building hours, buses

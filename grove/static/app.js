@@ -4,7 +4,7 @@
   var ORDER = window.GROVE_WIDGETS.map(function (w) { return w[0]; });  // default order
   var WIDGETS = {};                             // id -> title
   window.GROVE_WIDGETS.forEach(function (w) { WIDGETS[w[0]] = w[1]; });
-  var ICONS = { weather: "cloud-sun", news: "newspaper", links: "link-45deg" };
+  var ICONS = { weather: "cloud-sun", news: "newspaper", links: "link-45deg", gameday: "trophy" };
   var STORAGE_KEY = "grove.layout.v1";
   var REFRESH_MS = 10 * 60 * 1000;
 
@@ -89,6 +89,59 @@
     return d.toLocaleDateString(undefined, { weekday: "short" });
   }
 
+  // ---------- game helpers ----------
+
+  function sportLabel(g) {
+    return g.sport === "football" ? "" : " · " + g.sport.charAt(0).toUpperCase() + g.sport.slice(1);
+  }
+
+  function matchup(g) {
+    if (g.home === false) return "at " + g.opponent;
+    if (g.home === null && g.location) return "vs. " + g.opponent + " (" + g.location + ")";
+    return "vs. " + g.opponent;
+  }
+
+  function gameDate(g) {
+    return g.all_day ? new Date(g.start + "T12:00:00") : new Date(g.start);
+  }
+
+  function shortDate(g) {
+    return gameDate(g).toLocaleDateString([], { month: "short", day: "numeric" });
+  }
+
+  function gameTime(g) {
+    var d = gameDate(g);
+    var day = d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+    if (g.all_day) return day + " · time TBA";
+    return day + " · " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+
+  function countdown(g) {
+    if (g.live) return "In progress";
+    if (g.all_day) return "";
+    var mins = Math.round((new Date(g.start).getTime() - Date.now()) / 60000);
+    if (mins <= 0) return "Kicking off";
+    if (mins < 60) return "Starts in " + mins + " min";
+    if (mins < 48 * 60) return "Starts in " + Math.floor(mins / 60) + "h " + (mins % 60) + "m";
+    return "In " + Math.round(mins / 1440) + " days";
+  }
+
+  // Game-day mode: a red banner under the greeting on football game days, a hint during game week.
+  function drawGameday() {
+    var pill = document.getElementById("gameday-pill");
+    var d = latest.gameday && latest.gameday.data;
+    var today = d && d.today, week = d && d.this_week;
+    document.body.classList.toggle("gameday", !!today);
+    if (today) {
+      pill.textContent = "It's game day! Ole Miss " + matchup(today) +
+        (today.all_day ? "" : " · " + new Date(today.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
+    } else if (week) {
+      pill.textContent = "Game week: " + matchup(week) + " on " +
+        gameDate(week).toLocaleDateString([], { weekday: "long" });
+    }
+    pill.classList.toggle("d-none", !(today || week));
+  }
+
   // ---------- widget renderers ----------
 
   var render = {
@@ -153,6 +206,35 @@
         ul.appendChild(li);
       });
       body.appendChild(ul);
+    },
+
+    gameday: function (d, body) {
+      if (!d.upcoming.length) {
+        body.appendChild(el("div", "widget-note", "No games on the schedule right now."));
+        return;
+      }
+      var next = d.upcoming[0];
+      var big = el("div", "game-next" + (d.today === null ? "" : " is-today"));
+      if (next.live) big.appendChild(el("div", "game-badge live", "LIVE"));
+      else if (d.today && d.today.start === next.start) big.appendChild(el("div", "game-badge", "GAME DAY"));
+      else big.appendChild(el("div", "game-label", "Next up" + sportLabel(next)));
+      big.appendChild(el("div", "game-matchup", matchup(next)));
+      big.appendChild(el("div", "game-when", gameTime(next)));
+      var extra = [countdown(next), next.tv].filter(Boolean).join(" · ");
+      if (extra) big.appendChild(el("div", "game-extra", extra));
+      body.appendChild(big);
+
+      var rest = d.upcoming.slice(1);
+      if (rest.length) {
+        var ul = el("ul", "game-list");
+        rest.forEach(function (g) {
+          var li = el("li");
+          li.appendChild(el("span", "game-list-when", shortDate(g)));
+          li.appendChild(el("span", null, matchup(g) + sportLabel(g)));
+          ul.appendChild(li);
+        });
+        body.appendChild(ul);
+      }
     },
 
     links: function (d, body) {
@@ -409,6 +491,7 @@
       .then(function (data) {
         latest = data;
         drawGreeting();
+        drawGameday();
         if (!arranging) draw();
       })
       .catch(function () { /* keep showing what we have */ });

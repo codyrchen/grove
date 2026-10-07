@@ -11,12 +11,13 @@ from datetime import datetime, timedelta, timezone
 
 from . import db
 from .config import database_url, load_env
-from .pipelines import news, weather
+from .pipelines import gameday, news, weather
 
 # name -> (fetch function, seconds between refreshes)
 PIPELINES = {
     "weather": (weather.fetch, 30 * 60),
     "news": (news.fetch, 60 * 60),
+    "gameday": (gameday.fetch, 3 * 60 * 60),
 }
 
 

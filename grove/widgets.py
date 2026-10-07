@@ -3,7 +3,7 @@ so a slow or broken source never slows down or breaks the page."""
 
 import json
 import os
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from . import db
@@ -20,7 +20,7 @@ QUICK_LINKS = [
 ]
 
 # Data older than this many seconds is flagged as stale (the source has been failing).
-STALE_AFTER = {"weather": 3 * 3600, "news": 12 * 3600}
+STALE_AFTER = {"weather": 3 * 3600, "news": 12 * 3600, "gameday": 24 * 3600}
 
 
 def time_ago(iso: str | None, now: datetime | None = None) -> str | None:
@@ -104,11 +104,48 @@ def stored(conn: db.DB, name: str, now: datetime | None = None) -> dict:
             "stale": age > STALE_AFTER.get(name, 6 * 3600)}
 
 
+GAME_LENGTH = timedelta(hours=4)
+
+
+def _game_start(g: dict) -> datetime:
+    if g.get("all_day"):
+        d = date.fromisoformat(g["start"][:10])
+        return datetime(d.year, d.month, d.day, tzinfo=CAMPUS_TZ)
+    return datetime.fromisoformat(g["start"])
+
+
+def gameday(conn: db.DB, now: datetime | None = None) -> dict:
+    """Next Rebels games, plus today's and this week's football game for game-day mode."""
+    out = stored(conn, "gameday", now)
+    if out["data"] is None:
+        out["message"] = "The Rebels schedule isn't set up yet."
+        return out
+    now = now or datetime.now(timezone.utc)
+    today = now.astimezone(CAMPUS_TZ).date()
+    upcoming = []
+    for g in out["data"].get("games", []):
+        start = _game_start(g)
+        end = start + (timedelta(days=1) if g.get("all_day") else GAME_LENGTH)
+        if end > now:
+            upcoming.append({**g, "local_date": start.astimezone(CAMPUS_TZ).date().isoformat(),
+                             "live": start <= now and not g.get("all_day")})
+    football = [g for g in upcoming if g["sport"] == "football"]
+    out["data"] = {
+        "upcoming": upcoming[:4],
+        "today": next((g for g in football if g["local_date"] == today.isoformat()), None),
+        "this_week": next((g for g in football
+                           if 0 < (date.fromisoformat(g["local_date"]) - today).days <= 6), None),
+    }
+    return out
+
+
 def build(conn: db.DB, name: str) -> dict:
     if name == "greeting":
         return {"data": greeting()}
     if name == "photo":
         return {"data": photo_of_the_day()}
+    if name == "gameday":
+        return gameday(conn)
     if name == "links":
         return {"data": {"links": QUICK_LINKS}}
     return stored(conn, name)
@@ -116,6 +153,7 @@ def build(conn: db.DB, name: str) -> dict:
 
 # id -> title, in the default order. Columns are filled left to right.
 WIDGETS = {
+    "gameday": "Game Day",
     "weather": "Weather",
     "news": "Campus News",
     "links": "Quick Links",
