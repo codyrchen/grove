@@ -134,20 +134,63 @@
     return "In " + Math.round(mins / 1440) + " days";
   }
 
+  // "Ole Miss 24 – 17 LSU" with LIVE / FINAL, from ESPN's scoreboard.
+  function scoreLine(sc) {
+    return "Ole Miss " + sc.us + " – " + sc.them + " " + sc.opponent;
+  }
+
+  function scoreboard(sc) {
+    var box = el("div", "game-score " + (sc.state === "in" ? "is-live" : sc.won ? "is-win" : sc.won === false ? "is-loss" : ""));
+    if (sc.state === "in") box.appendChild(el("div", "game-badge live", "LIVE · " + sc.detail));
+    else box.appendChild(el("div", "game-label", sc.detail || "Final"));
+    var line = el("div", "game-score-line");
+    line.appendChild(el("span", "game-score-team", "Ole Miss"));
+    line.appendChild(el("span", "game-score-num", sc.us + " – " + sc.them));
+    line.appendChild(el("span", "game-score-team", sc.opponent));
+    box.appendChild(line);
+    if (sc.state === "post" && sc.won !== null) {
+      box.appendChild(el("div", "game-result", (sc.won ? "W " : "L ") + Math.max(sc.us, sc.them) + "–" +
+        Math.min(sc.us, sc.them) + (sc.home ? " vs. " : " at ") + sc.opponent));
+    } else if (sc.tv) {
+      box.appendChild(el("div", "game-extra", sc.tv));
+    }
+    return box;
+  }
+
   // Game-day mode: a red banner under the greeting on football game days, a hint during game week.
   function drawGameday() {
     var pill = document.getElementById("gameday-pill");
     var d = latest.gameday && latest.gameday.data;
-    var today = d && d.today, week = d && d.this_week;
-    document.body.classList.toggle("gameday", !!today);
-    if (today) {
+    var today = d && d.today, week = d && d.this_week, sc = d && d.score;
+    document.body.classList.toggle("gameday", !!today || !!(sc && sc.state === "in"));
+    pill.classList.remove("live", "win");
+    if (sc && sc.state === "in") {
+      pill.textContent = "LIVE: " + scoreLine(sc) + " · " + sc.detail;
+      pill.classList.add("live");
+    } else if (sc && sc.state === "post" && sc.won) {
+      pill.textContent = "Rebels win! " + scoreLine(sc);
+      pill.classList.add("win");
+    } else if (today) {
       pill.textContent = "It's game day! Ole Miss " + matchup(today) +
         (today.all_day ? "" : " · " + new Date(today.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
     } else if (week) {
       pill.textContent = "Game week: " + matchup(week) + " on " +
         gameDate(week).toLocaleDateString([], { weekday: "long" });
     }
-    pill.classList.toggle("d-none", !(today || week));
+    var winning = sc && (sc.state === "in" || (sc.state === "post" && sc.won));
+    pill.classList.toggle("d-none", !(today || week || winning));
+  }
+
+  // Check every minute while a game is on (or about to start), every 10 minutes otherwise.
+  function nextRefreshMs() {
+    var d = latest.gameday && latest.gameday.data;
+    if (d && d.score && d.score.state === "in") return 60 * 1000;
+    var t = d && d.today;
+    if (t && !t.all_day) {
+      var mins = (new Date(t.start).getTime() - Date.now()) / 60000;
+      if (mins < 60 && mins > -360) return 60 * 1000;
+    }
+    return REFRESH_MS;
   }
 
   // ---------- my classes (CRNs saved per browser) ----------
@@ -348,10 +391,21 @@
     },
 
     gameday: function (d, body) {
-      if (!d.upcoming.length) {
+      var sc = d.score && d.score.state !== "pre" ? d.score : null;
+      var upcoming = d.upcoming;
+      if (sc) {
+        body.appendChild(scoreboard(sc));
+        // The game on the scoreboard is still in the schedule while it's on; don't show it twice.
+        upcoming = upcoming.filter(function (g) {
+          return !(g.sport === "football" && Math.abs(new Date(g.start) - new Date(sc.start)) < 6 * 3600000);
+        });
+        if (!upcoming.length) return;
+      }
+      if (!upcoming.length) {
         body.appendChild(el("div", "widget-note", "No games on the schedule right now."));
         return;
       }
+      d = Object.assign({}, d, { upcoming: upcoming });
       var next = d.upcoming[0];
       var big = el("div", "game-next" + (d.today === null ? "" : " is-today"));
       if (next.live) big.appendChild(el("div", "game-badge live", "LIVE"));
@@ -1005,6 +1059,8 @@
 
   draw();
   refresh();
-  setInterval(refresh, REFRESH_MS);
+  (function schedule() {
+    setTimeout(function () { refresh(); schedule(); }, nextRefreshMs());
+  })();
   welcome();
 })();

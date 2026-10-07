@@ -166,6 +166,21 @@ def _game_start(g: dict) -> datetime:
     return datetime.fromisoformat(g["start"])
 
 
+SCORE_SHOWN_FOR = timedelta(hours=36)
+
+
+def current_score(conn: db.DB, now: datetime) -> dict | None:
+    """The live or just-finished football game from ESPN, if it's recent enough to show."""
+    row = db.load(conn, "scores")
+    game = (row and row["data"] or {}).get("game")
+    if not game or not game.get("start"):
+        return None
+    start = datetime.fromisoformat(game["start"].replace("Z", "+00:00"))
+    if not (start - timedelta(hours=1) <= now <= start + SCORE_SHOWN_FOR):
+        return None
+    return game
+
+
 def kickoff_forecast(conn: db.DB, game: dict) -> dict | None:
     """The hourly forecast for a game's kickoff, once it's within the 5-day forecast."""
     if game.get("all_day") or game.get("home") is False:
@@ -205,6 +220,7 @@ def gameday(conn: db.DB, now: datetime | None = None, directory: Path | None = N
         "tips": [{"title": t["title"], "text": t.get("text"), "url": _web_url(t.get("url"))}
                  for t in info.get("tips", []) if isinstance(t, dict) and t.get("title")],
         "notes": (info.get("notes") or {}).get(upcoming[0]["local_date"]) if upcoming else None,
+        "score": current_score(conn, now),
         "today": next((g for g in football if g["local_date"] == today.isoformat()), None),
         "this_week": next((g for g in football
                            if 0 < (date.fromisoformat(g["local_date"]) - today).days <= 6), None),

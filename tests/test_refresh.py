@@ -37,3 +37,11 @@ def test_first_failure_with_no_data_yet(conn):
     row = db.load(conn, "news")
     assert row["data"] is None and row["error"] == "boom"
     assert db.last_attempt(conn, "news") == row["error_at"]
+
+
+def test_nothing_to_do_keeps_data(conn, monkeypatch):
+    monkeypatch.setitem(refresh.PIPELINES, "scores", (lambda: {"game": {"us": 31}}, 60))
+    refresh.run(conn, "scores")
+    monkeypatch.setitem(refresh.PIPELINES, "scores", (lambda: None, 60))
+    assert refresh.run(conn, "scores") is True
+    assert db.load(conn, "scores")["data"] == {"game": {"us": 31}}

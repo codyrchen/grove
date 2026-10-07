@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 
 from . import db
 from .config import database_url, load_env
-from .pipelines import classes, events, gameday, news, weather
+from .pipelines import classes, events, gameday, news, scores, weather
 
 # name -> (fetch function, seconds between refreshes)
 PIPELINES = {
@@ -20,6 +20,7 @@ PIPELINES = {
     "gameday": (gameday.fetch, 3 * 60 * 60),
     "events": (events.fetch, 60 * 60),
     "classes": (classes.fetch, 24 * 60 * 60),
+    "scores": (scores.fetch, 60),  # only asks ESPN during a game window
 }
 
 
@@ -31,6 +32,8 @@ def run(conn: db.DB, name: str) -> bool:
         db.save_error(conn, name, f"{type(e).__name__}: {e}")
         print(f"! {name} failed: {e}  (keeping the last good data)")
         return False
+    if data is None:  # nothing to do right now (e.g. no game on); try again next time
+        return True
     db.save_data(conn, name, data)
     print(f"{name}: updated")
     return True

@@ -1,0 +1,13 @@
+{"events": [
+  {"id": "401", "date": "2026-10-10T19:00Z", "name": "Auburn Tigers at Alabama Crimson Tide",
+   "competitions": [{"competitors": [
+      {"homeAway": "home", "score": "21", "team": {"id": "333", "location": "Alabama", "displayName": "Alabama Crimson Tide", "abbreviation": "ALA"}},
+      {"homeAway": "away", "score": "14", "team": {"id": "2", "location": "Auburn", "displayName": "Auburn Tigers", "abbreviation": "AUB"}}],
+     "status": {"type": {"state": "in", "completed": false, "shortDetail": "2nd 3:10"}}}]},
+  {"id": "402", "date": "2026-10-10T23:30Z", "name": "LSU Tigers at Ole Miss Rebels",
+   "competitions": [{"competitors": [
+      {"homeAway": "home", "score": "24", "team": {"id": "145", "location": "Ole Miss", "displayName": "Ole Miss Rebels", "abbreviation": "MISS"}},
+      {"homeAway": "away", "score": "17", "team": {"id": "99", "location": "LSU", "displayName": "LSU Tigers", "abbreviation": "LSU"}}],
+     "broadcasts": [{"market": "national", "names": ["SEC Network"]}],
+     "status": {"type": {"state": "in", "completed": false, "shortDetail": "3rd 4:12"}}}]}
+]}
