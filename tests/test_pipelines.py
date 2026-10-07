@@ -16,7 +16,8 @@ def test_weather_parse():
     assert weather.clock("2026-10-08T00:05") == "12:05 AM"
     assert len(w["days"]) == 5
     assert w["days"][2] == {"date": "2026-10-09", "high": 70, "low": 59, "rain_chance": 85,
-                            "text": "Thunderstorms", "icon": "cloud-lightning-rain"}
+                            "text": "Thunderstorms", "icon": "cloud-lightning-rain", "code": 95}
+    assert w["code"] == 2
 
 
 def test_weather_upcoming_hours():

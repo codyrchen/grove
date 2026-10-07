@@ -4,7 +4,11 @@
   var ORDER = window.GROVE_WIDGETS.map(function (w) { return w[0]; });  // default order
   var WIDGETS = {};                             // id -> title
   window.GROVE_WIDGETS.forEach(function (w) { WIDGETS[w[0]] = w[1]; });
-  var ICONS = { weather: "cloud-sun", news: "newspaper", links: "link-45deg", gameday: "trophy" };
+  var ICONS = { weather: "cloud-sun", news: "newspaper", links: "link-45deg", gameday: "trophy",
+                countdowns: "hourglass-split", square: "shop" };
+  var ROLES = window.GROVE_ROLES;               // role -> widgets it starts with
+  var ROLE_KEY = "grove.role";
+  var COUNTDOWN_KEY = "grove.countdowns";
   var STORAGE_KEY = "grove.layout.v1";
   var REFRESH_MS = 10 * 60 * 1000;
 
@@ -142,6 +146,68 @@
     pill.classList.toggle("d-none", !(today || week));
   }
 
+  // ---------- personal countdowns (saved per browser) ----------
+
+  function getCountdowns() {
+    try {
+      var list = JSON.parse(localStorage.getItem(COUNTDOWN_KEY)) || [];
+      return Array.isArray(list) ? list.filter(function (e) { return e && e.name && e.date; }) : [];
+    } catch (e) { return []; }
+  }
+
+  function saveCountdowns(list) {
+    try { localStorage.setItem(COUNTDOWN_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
+    draw();
+  }
+
+  function removeCountdown(i) {
+    var list = getCountdowns();
+    list.splice(i, 1);
+    saveCountdowns(list);
+  }
+
+  // Whole days from today (in your time zone) to a YYYY-MM-DD date.
+  function daysUntil(iso) {
+    var p = iso.split("-").map(Number), t = new Date();
+    var target = Date.UTC(p[0], p[1] - 1, p[2]);
+    var today = Date.UTC(t.getFullYear(), t.getMonth(), t.getDate());
+    return Math.round((target - today) / 86400000);
+  }
+
+  function countdownForm() {
+    var wrap = el("div", "countdown-add");
+    var open = el("button", "countdown-add-btn", "+ Add a countdown");
+    open.type = "button";
+    var form = el("form", "countdown-form d-none");
+    var name = el("input");
+    name.placeholder = getRole() === "student" ? "Spring Break" : "Back in Oxford";
+    name.maxLength = 40;
+    name.required = true;
+    name.setAttribute("aria-label", "Countdown name");
+    var when = el("input");
+    when.type = "date";
+    when.required = true;
+    when.setAttribute("aria-label", "Date");
+    var save = el("button", "study-go", "Add");
+    save.type = "submit";
+    form.appendChild(name); form.appendChild(when); form.appendChild(save);
+    open.addEventListener("click", function () {
+      open.classList.add("d-none");
+      form.classList.remove("d-none");
+      name.focus();
+    });
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (!name.value.trim() || !when.value) return;
+      var list = getCountdowns();
+      list.push({ name: name.value.trim().slice(0, 40), date: when.value });
+      saveCountdowns(list.slice(-10));
+    });
+    wrap.appendChild(open);
+    wrap.appendChild(form);
+    return wrap;
+  }
+
   // ---------- widget renderers ----------
 
   var render = {
@@ -237,6 +303,54 @@
       }
     },
 
+    countdowns: function (d, body) {
+      var items = [];
+      if (getRole() === "student") {
+        d.academic.forEach(function (e) { items.push({ name: e.name, date: e.date, days: e.days }); });
+      }
+      getCountdowns().forEach(function (e, i) {
+        var days = daysUntil(e.date);
+        if (days >= 0) items.push({ name: e.name, date: e.date, days: days, personal: i });
+      });
+      items.sort(function (a, b) { return a.days - b.days; });
+
+      if (items.length) {
+        var ul = el("ul", "countdown-list");
+        items.forEach(function (e) {
+          var li = el("li");
+          var num = el("div", "countdown-days", e.days === 0 ? "Today" : String(e.days));
+          if (e.days > 0) num.appendChild(el("small", null, e.days === 1 ? "day" : "days"));
+          li.appendChild(num);
+          li.appendChild(el("div", "countdown-name", e.name));
+          if (e.personal !== undefined) {
+            var x = el("button", "countdown-remove", "×");
+            x.type = "button";
+            x.title = "Remove";
+            x.setAttribute("aria-label", "Remove " + e.name);
+            x.addEventListener("click", function () { removeCountdown(e.personal); });
+            li.appendChild(x);
+          }
+          ul.appendChild(li);
+        });
+        body.appendChild(ul);
+      } else {
+        body.appendChild(el("div", "widget-note mb-2",
+          getRole() === "student" ? "Add a countdown to spring break, a trip or a big game."
+                                  : "Counting down to your next trip back to Oxford?"));
+      }
+      body.appendChild(countdownForm());
+    },
+
+    square: function (d, body) {
+      body.appendChild(el("div", "game-label", "This week on the Square"));
+      var name = d.url ? link(d.url, d.name) : el("span", null, d.name);
+      var h = el("div", "square-name");
+      h.appendChild(name);
+      body.appendChild(h);
+      if (d.blurb) body.appendChild(el("div", "square-blurb", d.blurb));
+      if (d.deal) body.appendChild(el("div", "square-deal", d.deal));
+    },
+
     links: function (d, body) {
       var g = el("div", "links-grid");
       d.links.forEach(function (l) {
@@ -253,6 +367,7 @@
 
   function card(id) {
     var w = latest[id] || {};
+    if (w.empty && !arranging) return null;     // nothing to show yet (e.g. no Square features)
     var node = el("section", "widget");
     node.dataset.widget = id;
     node.setAttribute("aria-label", WIDGETS[id]);
@@ -285,7 +400,10 @@
     state.layout.forEach(function (col, i) {
       var c = el("div", "grove-col");
       c.dataset.col = i;
-      col.forEach(function (id) { c.appendChild(card(id)); });
+      col.forEach(function (id) {
+        var node = card(id);
+        if (node) c.appendChild(node);
+      });
       grid.appendChild(c);
     });
     if (arranging) setDraggable(true);
@@ -297,8 +415,63 @@
     document.getElementById("greeting-hello").textContent = g.hello;
     document.getElementById("greeting-date").textContent = g.date;
     var week = document.getElementById("greeting-week");
-    week.textContent = g.semester_week ? "Week " + g.semester_week + " of the semester" : "";
-    week.classList.toggle("d-none", !g.semester_week);
+    var showWeek = g.semester_week && getRole() === "student";
+    week.textContent = showWeek ? "Week " + g.semester_week + " of the semester" : "";
+    week.classList.toggle("d-none", !showWeek);
+
+    var moment = document.getElementById("moment-pill");
+    var m = g.snow ? { message: "Snow in Oxford! Stay warm, Rebels." } : g.moment;
+    moment.textContent = m ? m.message : "";
+    moment.classList.toggle("d-none", !m);
+    document.body.classList.toggle("finals", !!(g.moment && g.moment.mode === "finals"));
+    setSnow(!!g.snow);
+
+    var trivia = document.getElementById("trivia");
+    trivia.textContent = g.trivia ? "Did you know? " + g.trivia : "";
+    trivia.classList.toggle("d-none", !g.trivia);
+  }
+
+  // Snow day: a few drifting flakes (skipped for people who prefer reduced motion).
+  function setSnow(on) {
+    var layer = document.getElementById("snow");
+    if (!on || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      if (layer) layer.remove();
+      return;
+    }
+    if (layer) return;
+    layer = el("div", "snow");
+    layer.id = "snow";
+    layer.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < 40; i++) {
+      var f = el("span", null, "❄");
+      f.style.left = Math.random() * 100 + "%";
+      f.style.animationDuration = 8 + Math.random() * 10 + "s";
+      f.style.animationDelay = -Math.random() * 15 + "s";
+      f.style.fontSize = 8 + Math.random() * 14 + "px";
+      layer.appendChild(f);
+    }
+    document.body.appendChild(layer);
+  }
+
+  // ---------- who you are: student, fan or alum (saved per browser) ----------
+
+  function getRole() {
+    try { return ROLES[localStorage.getItem(ROLE_KEY)] ? localStorage.getItem(ROLE_KEY) : "student"; }
+    catch (e) { return "student"; }
+  }
+
+  function hasRole() {
+    try { return !!ROLES[localStorage.getItem(ROLE_KEY)]; } catch (e) { return false; }
+  }
+
+  function setRole(role) {
+    try { localStorage.setItem(ROLE_KEY, role); } catch (e) { /* ignore */ }
+    state = defaults(state.columns);
+    state.hidden = ORDER.filter(function (id) { return ROLES[role].indexOf(id) < 0; });
+    state = normalize(state);
+    save();
+    draw();
+    drawGreeting();
   }
 
   // ---------- your name (saved per browser) ----------
@@ -593,6 +766,11 @@
     });
   });
 
+  document.getElementById("role-select").addEventListener("change", function (e) {
+    setRole(e.target.value);
+    syncSettings();
+  });
+
   document.getElementById("reset-layout").addEventListener("click", function () {
     state = defaults(state.columns);
     save();
@@ -604,11 +782,31 @@
     syncSettings();
     nameInput.value = getName();
     searchToggle.checked = searchShown();
+    document.getElementById("role-select").value = getRole();
   });
+
+  // ---------- first visit: welcome ----------
+
+  function welcome() {
+    var modalEl = document.getElementById("welcome");
+    if (hasRole() || !window.bootstrap) return;
+    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    var nameEl = document.getElementById("welcome-name");
+    modalEl.querySelectorAll(".role-choice").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (nameEl.value.trim()) setName(nameEl.value);
+        setRole(b.dataset.role);
+        modal.hide();
+      });
+    });
+    modalEl.addEventListener("shown.bs.modal", function () { nameEl.focus(); }, { once: true });
+    modal.show();
+  }
 
   // ---------- start ----------
 
   draw();
   refresh();
   setInterval(refresh, REFRESH_MS);
+  welcome();
 })();

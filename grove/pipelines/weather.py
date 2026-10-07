@@ -36,6 +36,9 @@ CODES = {
 }
 
 
+SNOW_CODES = {71, 73, 75, 77, 85, 86}
+
+
 def describe(code, is_day: bool = True) -> tuple[str, str]:
     text, icon = CODES.get(code, ("—", "cloud"))
     if not is_day and icon in ("sun", "cloud-sun"):
@@ -87,6 +90,7 @@ def parse(raw: dict) -> dict:
             "rain_chance": daily["precipitation_probability_max"][i],
             "text": d_text,
             "icon": d_icon,
+            "code": daily["weather_code"][i],
         })
     return {
         "temp": round(cur["temperature_2m"]),
@@ -94,6 +98,7 @@ def parse(raw: dict) -> dict:
         "wind_mph": round(cur["wind_speed_10m"]),
         "text": text,
         "icon": icon,
+        "code": cur["weather_code"],
         "sunset": clock(daily["sunset"][0]) if daily.get("sunset") else None,
         "hours": upcoming_hours(raw),
         "days": days,

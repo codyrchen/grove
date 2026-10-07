@@ -32,9 +32,11 @@
              aria-label="Search the web" autocomplete="off" spellcheck="false">
     </form>
     <div class="hero-pill gameday-pill d-none" id="gameday-pill"></div>
+    <div class="hero-pill moment-pill d-none" id="moment-pill"></div>
     <div class="hero-pill {% if not greeting.semester_week %}d-none{% endif %}" id="greeting-week">
       {% if greeting.semester_week %}Week {{ greeting.semester_week }} of the semester{% endif %}
     </div>
+    <div class="hero-trivia d-none" id="trivia"></div>
   </header>
 
   <section class="study d-none" id="study" aria-label="Study mode">
@@ -82,6 +84,13 @@
       <div class="modal-body">
         <label class="h6 fw-semibold d-block" for="name-input">Your name</label>
         <input class="form-control mb-4" id="name-input" maxlength="40" placeholder="Rebel" autocomplete="given-name">
+        <label class="h6 fw-semibold d-block" for="role-select">I'm a…</label>
+        <select class="form-select mb-1" id="role-select">
+          <option value="student">Student</option>
+          <option value="fan">Fan</option>
+          <option value="alumni">Alum</option>
+        </select>
+        <div class="small text-muted mb-4">Changing this resets your widgets to that set.</div>
         <div class="form-check form-switch mb-4">
           <input class="form-check-input" type="checkbox" role="switch" id="search-toggle">
           <label class="form-check-label" for="search-toggle">Show the search bar</label>
@@ -111,6 +120,27 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="welcome" tabindex="-1" aria-labelledby="welcome-title" aria-hidden="true"
+     data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content welcome">
+      <div class="modal-body p-4 text-center">
+        <div class="brand-mark welcome-mark"><i class="bi bi-tree-fill"></i></div>
+        <h2 class="h3 fw-bold mt-3 mb-1" id="welcome-title">Welcome to {{ SITE_NAME }}</h2>
+        <p class="text-muted mb-4">Your Ole Miss day on one page. Two quick questions.</p>
+        <label class="fw-semibold d-block text-start mb-1" for="welcome-name">What should we call you?</label>
+        <input class="form-control mb-4" id="welcome-name" maxlength="40" placeholder="Your first name" autocomplete="given-name">
+        <div class="fw-semibold text-start mb-2">I'm a…</div>
+        <div class="role-choices">
+          <button type="button" class="role-choice" data-role="student"><i class="bi bi-backpack2"></i>Student</button>
+          <button type="button" class="role-choice" data-role="fan"><i class="bi bi-megaphone"></i>Fan</button>
+          <button type="button" class="role-choice" data-role="alumni"><i class="bi bi-mortarboard"></i>Alum</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block footer %}
@@ -122,6 +152,7 @@
 
 {% block scripts %}
 {# A list of pairs, not a dict: tojson sorts dict keys, which would lose the default order. #}
-<script>window.GROVE_WIDGETS = {{ widgets.items() | list | tojson }};</script>
+<script>window.GROVE_WIDGETS = {{ widgets.items() | list | tojson }};
+window.GROVE_ROLES = {{ roles | tojson }};</script>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 {% endblock %}

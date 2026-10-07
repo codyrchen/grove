@@ -37,7 +37,7 @@ def create_app(database: str | None = None) -> Flask:
 
     @app.get("/")
     def dashboard():
-        return render_template("dashboard.html", widgets=widgets.WIDGETS,
+        return render_template("dashboard.html", widgets=widgets.WIDGETS, roles=widgets.ROLES,
                                greeting=widgets.greeting(), photo=widgets.photo_of_the_day())
 
     @app.get("/about")

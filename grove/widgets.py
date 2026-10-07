@@ -6,8 +6,9 @@ import os
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from . import db
+from . import content, db
 from .config import CAMPUS_TZ
+from .pipelines.weather import SNOW_CODES
 
 QUICK_LINKS = [
     {"label": "myOleMiss", "url": "https://my.olemiss.edu", "icon": "person-badge", "color": "#ce1126"},
@@ -57,6 +58,57 @@ def greeting(now: datetime | None = None) -> dict:
         out["semester_week"] = (today - start).days // 7 + 1
         out["days_left"] = (end - today).days
     return out
+
+
+def trivia_of_the_day(now: datetime | None = None, directory: Path | None = None) -> str | None:
+    facts = [f["text"] for f in content.entries("trivia.json", directory) if f.get("text")]
+    if not facts:
+        return None
+    today = (now or datetime.now(timezone.utc)).astimezone(CAMPUS_TZ).date()
+    # Offset from the photo rotation so the pairings change.
+    return facts[(today.toordinal() * 7) % len(facts)]
+
+
+def current_moment(now: datetime | None = None, directory: Path | None = None) -> dict | None:
+    """The campus moment happening today (Homecoming week, finals...), from moments.json."""
+    today = (now or datetime.now(timezone.utc)).astimezone(CAMPUS_TZ).date()
+    for m in content.entries("moments.json", directory):
+        start, end = content.parse_date(m.get("start")), content.parse_date(m.get("end"))
+        if start and end and start <= today <= end and m.get("message"):
+            return {"message": m["message"], "mode": m.get("mode")}
+    return None
+
+
+def snowing(conn: db.DB) -> bool:
+    """Snow in Oxford right now or in today's forecast."""
+    row = db.load(conn, "weather")
+    w = row and row["data"]
+    if not w:
+        return False
+    return w.get("code") in SNOW_CODES or bool(w.get("days")) and w["days"][0].get("code") in SNOW_CODES
+
+
+def countdowns(now: datetime | None = None, directory: Path | None = None) -> dict:
+    """Upcoming academic dates from academic_calendar.json (personal countdowns live in the browser)."""
+    today = (now or datetime.now(timezone.utc)).astimezone(CAMPUS_TZ).date()
+    upcoming = []
+    for e in content.entries("academic_calendar.json", directory):
+        d = content.parse_date(e.get("date"))
+        if d and e.get("name") and 0 <= (d - today).days <= 120:
+            upcoming.append({"name": e["name"], "date": d.isoformat(), "days": (d - today).days})
+    upcoming.sort(key=lambda e: e["date"])
+    return {"academic": upcoming[:5]}
+
+
+def square_feature(now: datetime | None = None, directory: Path | None = None) -> dict | None:
+    """This week's featured Oxford Square business, rotating every Monday."""
+    shops = [s for s in content.entries("square.json", directory) if s.get("name")]
+    if not shops:
+        return None
+    today = (now or datetime.now(timezone.utc)).astimezone(CAMPUS_TZ).date()
+    s = shops[today.isocalendar().week % len(shops)]
+    return {"name": s["name"], "blurb": s.get("blurb"), "deal": s.get("deal"),
+            "url": _web_url(s.get("url"))}
 
 
 PHOTOS_DIR = Path(__file__).parent / "static" / "photos"
@@ -141,7 +193,13 @@ def gameday(conn: db.DB, now: datetime | None = None) -> dict:
 
 def build(conn: db.DB, name: str) -> dict:
     if name == "greeting":
-        return {"data": greeting()}
+        return {"data": {**greeting(), "moment": current_moment(), "trivia": trivia_of_the_day(),
+                         "snow": snowing(conn)}}
+    if name == "countdowns":
+        return {"data": countdowns()}
+    if name == "square":
+        feature = square_feature()
+        return {"data": feature, "empty": feature is None}
     if name == "photo":
         return {"data": photo_of_the_day()}
     if name == "gameday":
@@ -155,6 +213,15 @@ def build(conn: db.DB, name: str) -> dict:
 WIDGETS = {
     "gameday": "Game Day",
     "weather": "Weather",
+    "countdowns": "Countdowns",
     "news": "Campus News",
     "links": "Quick Links",
+    "square": "On the Square",
+}
+
+# Widgets each kind of visitor starts with (they can turn any on or off later).
+ROLES = {
+    "student": ["gameday", "weather", "countdowns", "news", "links", "square"],
+    "fan": ["gameday", "weather", "countdowns", "news", "square"],
+    "alumni": ["gameday", "weather", "countdowns", "news", "square"],
 }
