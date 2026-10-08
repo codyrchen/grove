@@ -1,6 +1,6 @@
 # Grove
 
-Grove is a daily home page for Ole Miss students and fans. It shows a campus photo of the day, a big greeting with your name, Rebels game day, your next class, what's open for dining, what's on tonight in Oxford, weather by the hour, countdowns, campus news and quick links. It's inspired by Princeton's [Today](https://github.com/TigerAppsOrg/Today).
+Grove is a daily home page for Ole Miss students and fans. It shows a campus photo of the day, a big greeting with your name, Rebels game day, your next class, what's open for dining, what's on tonight in Oxford, weather by the hour, countdowns, campus news and quick links. 
 
 - Click the name in the greeting to change it.
 - **Settings** turns widgets on and off and switches between 2 and 3 columns. **Arrange** lets you drag widgets around. Phones always show one column.
